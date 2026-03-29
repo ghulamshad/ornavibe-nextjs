@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Box, Container, Typography, Button } from '@mui/material';
+import { Box, Container, Typography, Button, useTheme } from '@mui/material';
 import Slider from 'react-slick';
 import Link from 'next/link';
 import { ArrowForward } from '@mui/icons-material';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { resolveMediaUrl } from '@/lib/utils/media';
+import { softHeroGradient } from '@/lib/theme/storefrontSurfaces';
 
 export interface HeroSlide {
   sub_title: string;
@@ -17,18 +19,14 @@ export interface HeroSlide {
   cta_secondary_text: string;
   cta_secondary_href: string;
   image_url: string;
+  /** Full-bleed hero: image alt text (optional; falls back to title without HTML). */
+  image_alt?: string;
+  /** Full-bleed hero: open primary link in a new tab (external promos). */
+  open_in_new_tab?: boolean;
 }
 
-const backendBase =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:8000';
-
-const resolveImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${backendBase}${url}`;
-};
-
 export default function HeroSliderSection({ slides }: { slides: HeroSlide[] }) {
+  const theme = useTheme();
   const list = useMemo(() => {
     if (Array.isArray(slides) && slides.length > 0) return slides;
     return [
@@ -53,7 +51,7 @@ export default function HeroSliderSection({ slides }: { slides: HeroSlide[] }) {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 5000,
-    arrows: true,
+    // arrows: true,
     fade: true,
   };
 
@@ -77,8 +75,8 @@ export default function HeroSliderSection({ slides }: { slides: HeroSlide[] }) {
               position: 'relative',
               minHeight: { xs: 420, md: 560 },
               backgroundImage: slide.image_url
-                ? `url(${resolveImageUrl(slide.image_url)})`
-                : 'linear-gradient(135deg, #ffe7f0 0%, #f7f4ff 50%, #e8f4ff 100%)',
+                ? `url(${resolveMediaUrl(slide.image_url)})`
+                : softHeroGradient(theme),
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               display: 'flex',
@@ -101,7 +99,7 @@ export default function HeroSliderSection({ slides }: { slides: HeroSlide[] }) {
                     },
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: '#ff4f72',
+                    color: 'primary.main',
                     fontWeight: 600,
                     mb: 1.5,
                     opacity: 0,

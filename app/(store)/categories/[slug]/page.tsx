@@ -25,7 +25,9 @@ import {
   IconButton,
   CircularProgress,
   Link as MuiLink,
+  useTheme,
 } from '@mui/material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import { Home, NavigateNext, Category as CategoryIcon, GridView as GridViewIcon, ViewList as ViewListIcon } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -40,6 +42,7 @@ const PER_PAGE = 12;
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 
 export default function CategorySlugPage() {
+  const theme = useTheme();
   const params = useParams();
   const slug = params?.slug as string;
   const searchParams = useSearchParams();
@@ -303,7 +306,7 @@ export default function CategorySlugPage() {
               </Grid>
             ) : categoryNotFound ? (
               <Paper variant="outlined" sx={{ textAlign: 'center', py: 8, px: 2 }}>
-                <CategoryIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <CategoryIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   Category not found
                 </Typography>
@@ -316,7 +319,7 @@ export default function CategorySlugPage() {
               </Paper>
             ) : products.length === 0 ? (
               <Paper variant="outlined" sx={{ textAlign: 'center', py: 8, px: 2 }}>
-                <CategoryIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <CategoryIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   No products in this category
                 </Typography>
@@ -375,7 +378,7 @@ export default function CategorySlugPage() {
               </Box>
             ) : quickViewProduct ? (
               <>
-                <Box sx={{ aspectRatio: '1', bgcolor: 'grey.100', borderRadius: 1, mb: 2, overflow: 'hidden' }}>
+                <Box sx={{ aspectRatio: '1', bgcolor: surfaceSoft(theme), borderRadius: 1, mb: 2, overflow: 'hidden' }}>
                   {(quickViewProduct.images?.length ? quickViewProduct.images[0] : quickViewProduct.image_url) ? (
                     <Box
                       component="img"

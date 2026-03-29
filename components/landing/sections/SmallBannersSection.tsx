@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid, useTheme } from '@mui/material';
 import Link from 'next/link';
 import { ArrowForward } from '@mui/icons-material';
 import SectionContainer from '@/components/ui/SectionContainer';
+import { resolveMediaUrl } from '@/lib/utils/media';
+import { softHeroGradient, mediaScrimLight } from '@/lib/theme/storefrontSurfaces';
 
 export interface SmallBannerItem {
   eyebrow: string;
@@ -14,16 +16,8 @@ export interface SmallBannerItem {
   image_url: string;
 }
 
-const backendBase =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:8000';
-
-const resolveImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${backendBase}${url}`;
-};
-
 export default function SmallBannersSection({ items }: { items: SmallBannerItem[] }) {
+  const theme = useTheme();
   const list =
     Array.isArray(items) && items.length >= 3
       ? items.slice(0, 3)
@@ -66,8 +60,8 @@ export default function SmallBannersSection({ items }: { items: SmallBannerItem[
                 overflow: 'hidden',
                 minHeight: 220,
                 background: banner.image_url
-                  ? `url(${resolveImageUrl(banner.image_url)}) center/cover`
-                  : 'linear-gradient(135deg, #ffe7f0 0%, #f7f4ff 100%)',
+                  ? `url(${resolveMediaUrl(banner.image_url)}) center/cover`
+                  : softHeroGradient(theme),
                 textDecoration: 'none',
                 color: 'text.primary',
                 '&:hover .banner-cta': { transform: 'translateX(4px)' },
@@ -79,7 +73,7 @@ export default function SmallBannersSection({ items }: { items: SmallBannerItem[
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  bgcolor: 'rgba(0,0,0,0.15)',
+                  bgcolor: mediaScrimLight(theme),
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'flex-end',

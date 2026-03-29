@@ -11,6 +11,8 @@ export interface Category {
   parent_id?: string | null;
   parent?: { id: string; name: string; slug: string } | null;
   children?: { id: string; name: string; slug: string }[];
+  sort_order?: number;
+  meta?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;
 }

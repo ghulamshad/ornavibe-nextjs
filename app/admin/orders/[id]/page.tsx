@@ -27,6 +27,7 @@ import { RootState, AppDispatch } from '@/redux/store';
 import { fetchDetailRequest, updateStatusRequest } from '@/redux/slices/admin/adminOrders.slice';
 import { useToast } from '@/components/common/Toast';
 import type { OrderStatus } from '@/types/order';
+import { usePublicSiteBranding } from '@/hooks/usePublicSiteBranding';
 
 const STATUSES: OrderStatus[] = [
   'pending',
@@ -40,6 +41,7 @@ const STATUSES: OrderStatus[] = [
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const branding = usePublicSiteBranding();
   const dispatch = useDispatch<AppDispatch>();
   const toast = useToast();
   const { detail, detailLoading, error } = useSelector((state: RootState) => state.adminOrders);
@@ -82,6 +84,32 @@ export default function AdminOrderDetailPage() {
           ← Back to orders
         </Button>
       </Box>
+      {branding ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            mb: 2,
+            '@media print': { breakInside: 'avoid' },
+          }}
+        >
+          <Box
+            component="img"
+            src={branding.logoSrc}
+            alt={branding.brandName}
+            sx={{ height: 40, width: 'auto', maxWidth: 160, objectFit: 'contain' }}
+          />
+          <Box>
+            <Typography variant="subtitle1" fontWeight={800}>
+              {branding.brandName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Order document
+            </Typography>
+          </Box>
+        </Box>
+      ) : null}
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         Order #{id}
       </Typography>

@@ -16,6 +16,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 
 const comparisonData = [
   {
@@ -97,7 +98,7 @@ export default function ComparisonSection() {
         <TableContainer component={Paper} sx={{ boxShadow: 3 }} data-aos="fade-up">
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.100' }}>
+              <TableRow sx={{ bgcolor: surfaceSoft(theme) }}>
                 <TableCell sx={{ fontWeight: 600 }}>Feature</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 600 }}>
                   <Chip label="ZeeERP" color="primary" />

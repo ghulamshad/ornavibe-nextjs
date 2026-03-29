@@ -10,12 +10,14 @@ import {
   CardActionArea,
   CardContent,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
 import { fetchCategoriesRequest } from '@/redux/slices/catalog.slice';
 import type { Category } from '@/types/catalog';
+import { softPrimaryTint } from '@/lib/theme/storefrontSurfaces';
 
 const iconForCategory = (name: string) => {
   const n = name.toLowerCase();
@@ -30,6 +32,7 @@ const iconForCategory = (name: string) => {
 };
 
 export default function CategoriesPreviewSection() {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const { categories, error } = useSelector((state: RootState) => state.catalog);
 
@@ -55,7 +58,7 @@ export default function CategoriesPreviewSection() {
             sx={{
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: '#ff4f72',
+              color: 'primary.main',
               fontWeight: 600,
             }}
             data-aos="fade-up"
@@ -118,7 +121,7 @@ export default function CategoriesPreviewSection() {
                         width: 48,
                         height: 48,
                         borderRadius: '999px',
-                        bgcolor: '#ffe7f0',
+                        bgcolor: softPrimaryTint(theme),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

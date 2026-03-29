@@ -14,12 +14,15 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
 import { fetchProductsRequest, fetchCategoriesRequest } from '@/redux/slices/catalog.slice';
 import type { Product, Category } from '@/types/catalog';
+import { resolveMediaUrl } from '@/lib/utils/media';
 
 const badgeForIndex = (index: number): { label: string; color: 'default' | 'primary' | 'secondary' } => {
   const mod = index % 4;
@@ -29,9 +32,10 @@ const badgeForIndex = (index: number): { label: string; color: 'default' | 'prim
   return { label: '10% Off', color: 'primary' };
 };
 
-const imageFor = (p: Product) => (p.images?.[0] ? p.images[0] : p.image_url || '');
+const imageFor = (p: Product) => resolveMediaUrl(p.images?.[0] ? p.images[0] : p.image_url || '');
 
 export default function PopularItemsSection() {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const { products, categories, loading } = useSelector((state: RootState) => state.catalog);
   const [tabIndex, setTabIndex] = useState(0);
@@ -94,7 +98,7 @@ export default function PopularItemsSection() {
                     }}
                   >
                     <CardActionArea component={Link} href={`/products/${product.slug}`}>
-                      <Box sx={{ position: 'relative', pt: '100%', bgcolor: 'grey.100' }}>
+                      <Box sx={{ position: 'relative', pt: '100%', bgcolor: surfaceSoft(theme) }}>
                         {badge.label && (
                           <Chip
                             size="small"

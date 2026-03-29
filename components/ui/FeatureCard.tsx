@@ -2,6 +2,7 @@
 
 import React, { ReactNode } from 'react';
 import { Box, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 
 export interface FeatureCardProps {
   icon?: ReactNode;
@@ -26,7 +27,7 @@ export default function FeatureCard({ icon, title, subtitle }: FeatureCardProps)
             width: 52,
             height: 52,
             borderRadius: '50%',
-            bgcolor: 'rgba(255,79,114,0.08)',
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

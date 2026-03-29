@@ -64,11 +64,19 @@ export interface AdminSettings {
   store_email?: string;
   store_phone?: string;
   currency?: string;
+  /** Full URL or `/storage/...` path to logo; used storefront, admin, and server-side branding */
+  store_logo_url?: string;
+  site_theme_primary?: string;
+  site_theme_secondary?: string;
+  site_theme_background?: string;
+  site_theme_paper?: string;
   site_hero_title?: string;
   site_hero_subtitle?: string;
   site_footer_brand?: string;
   site_footer_company?: string;
   site_footer_tagline?: string;
+  site_footer_bg?: string;
+  site_footer_text_color?: string;
   site_about_title?: string;
   site_about_body?: string;
   site_contact_title?: string;
@@ -77,6 +85,23 @@ export interface AdminSettings {
   site_cta_subtitle?: string;
   site_featured_title?: string;
   site_featured_subtitle?: string;
+  site_topbar_enabled?: string;
+  site_topbar_bg?: string;
+  site_topbar_text_color?: string;
+  site_topbar_center_text?: string;
+  site_topbar_center_text_color?: string;
+  site_topbar_center_link?: string;
+  site_topbar_phone?: string;
+  site_topbar_phone_color?: string;
+  site_topbar_social_links?: string;
+  /** `overlay` | `full_bleed` — homepage hero layout */
+  site_hero_slider_variant?: string;
+  /** JSON array of { name, role, quote, avatar_url?, rating? } */
+  site_testimonials?: string;
+  site_testimonials_title?: string;
+  /** Empty string = hide “Explore more” on storefront */
+  site_testimonials_explore_href?: string;
+  site_testimonials_explore_label?: string;
   [key: string]: string | undefined;
 }
 
@@ -91,6 +116,8 @@ export interface AdminLandingHeroSlide {
   cta_secondary_text?: string | null;
   cta_secondary_href?: string | null;
   image_url?: string | null;
+  image_alt?: string | null;
+  open_in_new_tab?: boolean;
   sort_order?: number;
   is_active?: boolean;
 }
@@ -114,4 +141,35 @@ export interface AdminLandingSmallBanner {
   image_url?: string | null;
   sort_order?: number;
   is_active?: boolean;
+}
+
+export interface AdminStickyContactBar {
+  id: number;
+  is_enabled: boolean;
+  placement: string;
+  edge_offset: number;
+  vertical_offset: number;
+  custom_top: string | null;
+  custom_right: string | null;
+  custom_bottom: string | null;
+  custom_left: string | null;
+}
+
+export interface AdminStickyContactItem {
+  id: number;
+  item_type: 'whatsapp' | 'phone' | 'link';
+  phone?: string | null;
+  message?: string | null;
+  href?: string | null;
+  image_url?: string | null;
+  label?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+  open_in_new_tab?: boolean;
+  resolved_href?: string | null;
+}
+
+export interface AdminStickyContactResponse {
+  bar: AdminStickyContactBar;
+  items: AdminStickyContactItem[];
 }

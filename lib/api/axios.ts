@@ -14,8 +14,14 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-const getApiBaseURL = () =>
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const getApiBaseURL = () => {
+  const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const trimmed = raw.replace(/\/+$/, '');
+  // Normalize common misconfig: setting API url to ".../api" or ".../api/v1"
+  if (trimmed.endsWith('/api/v1')) return trimmed.slice(0, -('/api/v1'.length));
+  if (trimmed.endsWith('/api')) return trimmed.slice(0, -('/api'.length));
+  return trimmed;
+};
 
 /** Fetch CSRF cookie from Laravel Sanctum (required before POST/PUT/PATCH/DELETE when using stateful API). */
 export async function getCsrfCookie(): Promise<void> {

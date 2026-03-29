@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Checkbox,
   CircularProgress,
   Alert,
   IconButton,
@@ -43,8 +44,9 @@ import {
 } from '@/redux/slices/admin/adminCategories.slice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { useToast } from '@/components/common/Toast';
+import { extractErrorMessage } from '@/lib/utils/errorHandler';
 import type { Category } from '@/types/catalog';
-import { uploadCmsMedia } from '@/lib/api/admin.service';
+import { bulkDeleteCategories, bulkUpdateCategories, uploadCmsMedia } from '@/lib/api/admin.service';
 
 export default function AdminCategoriesPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -69,6 +71,11 @@ export default function AdminCategoriesPage() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuCategory, setMenuCategory] = useState<Category | null>(null);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkMoveParentId, setBulkMoveParentId] = useState<string>('');
+
   const load = () => {
     dispatch(
       fetchListRequest({
@@ -83,8 +90,13 @@ export default function AdminCategoriesPage() {
     load();
   }, [dispatch]);
 
-  const handleApplyFilters = () => load();
+  const handleApplyFilters = () => {
+    setSelectedIds(new Set());
+    load();
+  };
   const handleClearFilters = () => {
+    setSelectedIds(new Set());
+    setBulkMoveParentId('');
     setFilters({ search: '', parent_filter: '', parent_id: '' });
     dispatch(fetchListRequest({}));
   };
@@ -156,6 +168,64 @@ export default function AdminCategoriesPage() {
     if (deleteId) dispatch(deleteRequest(deleteId));
   };
 
+  const selectableIds = list.map((c) => c.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
+  const someSelected = selectableIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const nextEverySelected = allSelected;
+      if (nextEverySelected) selectableIds.forEach((id) => next.delete(id));
+      else selectableIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleRowSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const runBulkMove = async (parentId: string | null) => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds];
+      const { updated } = await bulkUpdateCategories({ ids, parent_id: parentId });
+      toast.showSuccess(`Updated ${updated} categor${updated === 1 ? 'y' : 'ies'}.`);
+      setSelectedIds(new Set());
+      setBulkMoveParentId('');
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const runBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds];
+      const { deleted } = await bulkDeleteCategories(ids);
+      toast.showSuccess(`Deleted ${deleted} categor${deleted === 1 ? 'y' : 'ies'}.`);
+      setSelectedIds(new Set());
+      setBulkMoveParentId('');
+      setBulkDeleteOpen(false);
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
   const prevSaveLoading = React.useRef(saveLoading);
   useEffect(() => {
     if (prevSaveLoading.current && !saveLoading && !error) {
@@ -170,6 +240,11 @@ export default function AdminCategoriesPage() {
       if (error) toast.showError(error);
       else if (deleteId) {
         toast.showSuccess('Category deleted');
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(deleteId);
+          return next;
+        });
         setDeleteId(null);
       }
     }
@@ -265,6 +340,63 @@ export default function AdminCategoriesPage() {
           {error}
         </Alert>
       )}
+      {selectedIds.size > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 2,
+            p: 1.5,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            bgcolor: 'action.selected',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" fontWeight={700}>
+            {selectedIds.size} selected
+          </Typography>
+          <Button size="small" variant="outlined" disabled={bulkWorking} onClick={() => void runBulkMove(null)}>
+            Move to root
+          </Button>
+          <TextField
+            size="small"
+            select
+            label="Parent"
+            value={bulkMoveParentId}
+            onChange={(e) => setBulkMoveParentId(e.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            <MenuItem value="">Root</MenuItem>
+            {rootCategories
+              .filter((r) => !selectedIds.has(r.id))
+              .map((r) => (
+                <MenuItem key={r.id} value={r.id}>
+                  {r.name}
+                </MenuItem>
+              ))}
+          </TextField>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={bulkWorking}
+            onClick={() => void runBulkMove(bulkMoveParentId || null)}
+          >
+            Move
+          </Button>
+          <Button
+            size="small"
+            color="error"
+            variant="contained"
+            disabled={bulkWorking}
+            onClick={() => setBulkDeleteOpen(true)}
+            startIcon={<DeleteOutlineIcon />}
+          >
+            Delete
+          </Button>
+        </Paper>
+      )}
       {loading && list.length === 0 ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
           <CircularProgress />
@@ -274,6 +406,15 @@ export default function AdminCategoriesPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={someSelected && !allSelected}
+                    checked={allSelected}
+                    onChange={toggleSelectAllOnPage}
+                    disabled={bulkWorking || selectableIds.length === 0}
+                    inputProps={{ 'aria-label': 'Select all categories' }}
+                  />
+                </TableCell>
                 <TableCell>Image</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Slug</TableCell>
@@ -286,7 +427,7 @@ export default function AdminCategoriesPage() {
             <TableBody>
               {list.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                     {filters.search || filters.parent_filter || filters.parent_id
                       ? 'No categories match the filters. Try different criteria or clear filters.'
                       : 'No categories yet. Add one to get started.'}
@@ -294,7 +435,20 @@ export default function AdminCategoriesPage() {
                 </TableRow>
               ) : (
                 list.map((c) => (
-                  <TableRow key={c.id} hover>
+                  <TableRow key={c.id} hover selected={selectedIds.has(c.id)}>
+                    <TableCell
+                      padding="checkbox"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      <Checkbox
+                        checked={selectedIds.has(c.id)}
+                        onChange={() => toggleRowSelected(c.id)}
+                        disabled={bulkWorking}
+                        inputProps={{ 'aria-label': `Select ${c.name}` }}
+                      />
+                    </TableCell>
                     <TableCell>
                       {c.image_url ? (
                         <Box component="img" src={c.image_url} alt="" sx={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 1 }} />
@@ -533,6 +687,18 @@ export default function AdminCategoriesPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteId(null)}
         loading={deleteLoading}
+      />
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected categories"
+        message={`Permanently delete ${selectedIds.size} categor${selectedIds.size === 1 ? 'y' : 'ies'}? This may require product/category reassignment.`}
+        confirmLabel="Delete all"
+        severity="destructive"
+        onConfirm={() => void runBulkDelete()}
+        onCancel={() => {
+          setBulkDeleteOpen(false);
+        }}
+        loading={bulkWorking}
       />
     </Box>
   );

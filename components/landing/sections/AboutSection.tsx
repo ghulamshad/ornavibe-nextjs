@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Typography, Button, Grid } from '@mui/material';
+import { Box, Container, Typography, Button, Grid, useTheme } from '@mui/material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import Link from 'next/link';
 import { ArrowForward } from '@mui/icons-material';
 import { CheckCircle } from '@mui/icons-material';
@@ -13,6 +14,7 @@ interface AboutContent {
 }
 
 export default function AboutSection({ content }: { content: AboutContent }) {
+  const theme = useTheme();
   const bullets = content.bullet_list && content.bullet_list.length > 0
     ? content.bullet_list
     : ['We Made Awesome Products', 'Competitive Price & Easy To Shop', 'Affordable Modern Design', 'Streamlined Shipping Experience'];
@@ -26,7 +28,7 @@ export default function AboutSection({ content }: { content: AboutContent }) {
               sx={{
                 borderRadius: 3,
                 overflow: 'hidden',
-                bgcolor: 'grey.100',
+                bgcolor: surfaceSoft(theme),
                 minHeight: 320,
                 display: 'flex',
                 alignItems: 'center',
@@ -38,7 +40,7 @@ export default function AboutSection({ content }: { content: AboutContent }) {
             </Box>
           </Grid>
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Typography variant="overline" sx={{ letterSpacing: '0.12em', color: '#ff4f72', fontWeight: 600 }}>
+            <Typography variant="overline" sx={{ letterSpacing: '0.12em', color: 'primary.main', fontWeight: 600 }}>
               About Us
             </Typography>
             <Typography variant="h4" fontWeight={800} sx={{ mt: 1, mb: 2 }}>

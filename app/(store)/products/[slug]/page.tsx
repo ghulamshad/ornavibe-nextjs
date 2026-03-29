@@ -15,7 +15,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  useTheme,
 } from '@mui/material';
+import { paperTranslucent, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import ZoomIn from '@mui/icons-material/ZoomIn';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -29,6 +31,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 const priceNum = (p: string | number): number => (typeof p === 'number' ? p : Number(p));
 
 export default function ProductDetailPage() {
+  const theme = useTheme();
   const params = useParams();
   const slug = params?.slug as string;
   const dispatch = useDispatch<AppDispatch>();
@@ -158,7 +161,7 @@ export default function ProductDetailPage() {
                 position: 'relative',
                 width: '100%',
                 aspectRatio: '1',
-                bgcolor: 'grey.100',
+                bgcolor: surfaceSoft(theme),
                 borderRadius: 2,
                 overflow: 'hidden',
               }}
@@ -199,7 +202,7 @@ export default function ProductDetailPage() {
                         borderRadius: 1,
                         border: '2px solid',
                         borderColor: 'divider',
-                        bgcolor: 'grey.100',
+                        bgcolor: surfaceSoft(theme),
                         overflow: 'hidden',
                         pointerEvents: 'none',
                         boxShadow: 2,
@@ -223,7 +226,7 @@ export default function ProductDetailPage() {
                   )}
                   <IconButton
                     size="small"
-                    sx={{ position: 'absolute', bottom: 8, right: 8, bgcolor: 'rgba(255,255,255,0.9)' }}
+                    sx={{ position: 'absolute', bottom: 8, right: 8, bgcolor: paperTranslucent(theme, 0.92) }}
                     onClick={() => setMagnifierOpen(true)}
                     aria-label="Full screen zoom"
                   >
@@ -248,10 +251,10 @@ export default function ProductDetailPage() {
                       height: 56,
                       borderRadius: 1,
                       border: 2,
-                      borderColor: selectedImageIndex === i ? 'primary.main' : 'grey.300',
+                      borderColor: selectedImageIndex === i ? 'primary.main' : 'divider',
                       p: 0,
                       overflow: 'hidden',
-                      bgcolor: 'grey.100',
+                      bgcolor: surfaceSoft(theme),
                       cursor: 'pointer',
                     }}
                   >

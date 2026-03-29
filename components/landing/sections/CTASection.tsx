@@ -7,9 +7,12 @@ import {
   Typography,
   Button,
   Stack,
+  useTheme,
 } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import Link from 'next/link';
+import { alpha } from '@mui/material/styles';
+import { ctaBandGradient } from '@/lib/theme/storefrontSurfaces';
 
 interface CTAContent {
   title: string;
@@ -17,13 +20,14 @@ interface CTAContent {
 }
 
 export default function CTASection({ content }: { content: CTAContent }) {
+  const theme = useTheme();
   return (
     <Box
       id="cta"
       sx={{
         py: { xs: 8, md: 12 },
-        background: 'linear-gradient(135deg, #ffb2c4 0%, #ff4f72 55%, #ff7f98 100%)',
-        color: 'white',
+        background: ctaBandGradient(theme),
+        color: 'common.white',
       }}
     >
       <Container maxWidth="md">
@@ -34,7 +38,7 @@ export default function CTASection({ content }: { content: CTAContent }) {
               fontWeight: 700,
               mb: 3,
               fontSize: { xs: '2rem', md: '2.5rem' },
-              color: 'white',
+              color: 'common.white',
             }}
           >
             {content.title}
@@ -43,7 +47,7 @@ export default function CTASection({ content }: { content: CTAContent }) {
             variant="h6"
             sx={{
               mb: 4,
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: alpha(theme.palette.common.white, 0.9),
               lineHeight: 1.8,
             }}
           >
@@ -61,7 +65,7 @@ export default function CTASection({ content }: { content: CTAContent }) {
               size="large"
               endIcon={<ArrowForward />}
               sx={{
-                bgcolor: 'white',
+                bgcolor: 'background.paper',
                 color: 'primary.main',
                 px: 4,
                 py: 1.5,
@@ -71,7 +75,7 @@ export default function CTASection({ content }: { content: CTAContent }) {
                 textTransform: 'none',
                 boxShadow: 4,
                 '&:hover': {
-                  bgcolor: 'grey.100',
+                  bgcolor: alpha(theme.palette.common.white, 0.92),
                   boxShadow: 6,
                   transform: 'translateY(-2px)',
                 },
@@ -86,8 +90,8 @@ export default function CTASection({ content }: { content: CTAContent }) {
               variant="outlined"
               size="large"
               sx={{
-                borderColor: 'white',
-                color: 'white',
+                borderColor: 'common.white',
+                color: 'common.white',
                 px: 4,
                 py: 1.5,
                 fontSize: '1rem',
@@ -95,8 +99,8 @@ export default function CTASection({ content }: { content: CTAContent }) {
                 borderRadius: 2,
                 textTransform: 'none',
                 '&:hover': {
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: 'common.white',
+                  bgcolor: alpha(theme.palette.common.white, 0.12),
                 },
               }}
             >

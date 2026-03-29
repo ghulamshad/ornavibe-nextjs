@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Box, Container, Typography, Grid, Card, CardActionArea, CardMedia, CardContent, Chip, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, Grid, Card, CardActionArea, CardMedia, CardContent, Chip, CircularProgress, useTheme } from '@mui/material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import Slider from 'react-slick';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
 import { fetchProductsRequest } from '@/redux/slices/catalog.slice';
 import type { Product } from '@/types/catalog';
+import { resolveMediaUrl } from '@/lib/utils/media';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
-const imageFor = (p: Product) => (p.images?.[0] ? p.images[0] : p.image_url || '');
+const imageFor = (p: Product) => resolveMediaUrl(p.images?.[0] ? p.images[0] : p.image_url || '');
 
 function Countdown({ endISO }: { endISO: string }) {
   const end = useMemo(() => new Date(endISO).getTime(), [endISO]);
@@ -74,6 +76,7 @@ export default function DealSection({
   title: string;
   countdown_end: string;
 }) {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const { products, loading } = useSelector((state: RootState) => state.catalog);
 
@@ -95,7 +98,7 @@ export default function DealSection({
   };
 
   return (
-    <Box sx={{ py: { xs: 6, md: 8 }, bgcolor: 'grey.100' }}>
+    <Box sx={{ py: { xs: 6, md: 8 }, bgcolor: surfaceSoft(theme) }}>
       <Container maxWidth="xl">
         <Box
           sx={{
@@ -134,7 +137,7 @@ export default function DealSection({
                       }}
                     >
                       <CardActionArea component={Link} href={`/products/${product.slug}`}>
-                        <Box sx={{ position: 'relative', pt: '100%', bgcolor: 'grey.100' }}>
+                        <Box sx={{ position: 'relative', pt: '100%', bgcolor: surfaceSoft(theme) }}>
                           {img && (
                             <CardMedia
                               component="img"

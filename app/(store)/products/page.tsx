@@ -28,7 +28,11 @@ import {
   IconButton,
   MenuItem,
   Link as MuiLink,
+  Rating,
+  Divider,
+  useTheme,
 } from '@mui/material';
+import { paperTranslucent, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import {
   Home,
   NavigateNext,
@@ -37,6 +41,8 @@ import {
   Clear as ClearIcon,
   GridView as GridViewIcon,
   ViewList as ViewListIcon,
+  ChevronLeft,
+  ChevronRight,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -53,6 +59,7 @@ const PRICE_MAX = 1000;
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 
 export default function ProductsPage() {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -100,6 +107,8 @@ export default function ProductsPage() {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewLoading, setQuickViewLoading] = useState(false);
   const [quickViewQty, setQuickViewQty] = useState(1);
+  const [quickViewImageIndex, setQuickViewImageIndex] = useState(0);
+  const [quickViewVariantId, setQuickViewVariantId] = useState<number | null>(null);
 
   useEffect(() => {
     dispatch(fetchWishlistRequest());
@@ -271,10 +280,15 @@ export default function ProductsPage() {
   const openQuickView = async (p: Product) => {
     setQuickViewProduct(null);
     setQuickViewQty(1);
+    setQuickViewImageIndex(0);
+    setQuickViewVariantId(null);
     setQuickViewLoading(true);
     try {
       const full = await fetchProductByIdOrSlug(p.slug || p.id);
       setQuickViewProduct(full);
+      if (full.variants?.length) {
+        setQuickViewVariantId(full.variants[0].id);
+      }
     } finally {
       setQuickViewLoading(false);
     }
@@ -282,7 +296,12 @@ export default function ProductsPage() {
 
   const handleQuickViewAddToCart = () => {
     if (quickViewProduct) {
-      dispatch(addItemRequest({ product_id: quickViewProduct.id, quantity: quickViewQty }));
+      const payload: { product_id: string | number; quantity: number; product_variant_id?: number } = {
+        product_id: quickViewProduct.id,
+        quantity: quickViewQty,
+      };
+      if (quickViewVariantId) payload.product_variant_id = quickViewVariantId;
+      dispatch(addItemRequest(payload));
       setQuickViewProduct(null);
     }
   };
@@ -542,7 +561,7 @@ export default function ProductsPage() {
               </Grid>
             ) : items.length === 0 ? (
               <Paper variant="outlined" sx={{ textAlign: 'center', py: 8, px: 2 }}>
-                <ShoppingBagOutlined sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <ShoppingBagOutlined sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   {hasActiveFilter ? 'No products match the filters' : 'No products yet'}
                 </Typography>
@@ -596,7 +615,7 @@ export default function ProductsPage() {
         </Grid>
 
         {/* Quick view modal */}
-        <Dialog open={!!quickViewProduct || quickViewLoading} onClose={() => setQuickViewProduct(null)} maxWidth="sm" fullWidth>
+        <Dialog open={!!quickViewProduct || quickViewLoading} onClose={() => setQuickViewProduct(null)} maxWidth="md" fullWidth>
           <DialogTitle>Quick view</DialogTitle>
           <DialogContent>
             {quickViewLoading ? (
@@ -605,53 +624,227 @@ export default function ProductsPage() {
               </Box>
             ) : quickViewProduct ? (
               <>
-                <Box sx={{ aspectRatio: '1', bgcolor: 'grey.100', borderRadius: 1, mb: 2, overflow: 'hidden' }}>
-                  {(quickViewProduct.images?.length ? quickViewProduct.images[0] : quickViewProduct.image_url) ? (
-                    <Box
-                      component="img"
-                      src={quickViewProduct.images?.length ? quickViewProduct.images[0] : quickViewProduct.image_url!}
-                      alt={quickViewProduct.name}
-                      sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                  ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                      <Typography color="text.secondary">No image</Typography>
-                    </Box>
-                  )}
-                </Box>
-                <Typography variant="h6" fontWeight={600}>
-                  {quickViewProduct.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {quickViewProduct.description || ''}
-                </Typography>
-                <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
-                  $
-                  {typeof quickViewProduct.price === 'number'
-                    ? quickViewProduct.price.toFixed(2)
-                    : Number(quickViewProduct.price).toFixed(2)}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <TextField
-                    type="number"
-                    size="small"
-                    label="Qty"
-                    value={quickViewQty}
-                    onChange={(e) => setQuickViewQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    inputProps={{ min: 1 }}
-                    sx={{ width: 80 }}
-                  />
-                  <Button variant="contained" onClick={handleQuickViewAddToCart}>
-                    Add to cart
-                  </Button>
-                  <Button
-                    component={Link}
-                    href={`/products/${quickViewProduct.slug || quickViewProduct.id}`}
-                    onClick={() => setQuickViewProduct(null)}
-                  >
-                    View full details
-                  </Button>
-                </Box>
+                {(() => {
+                  const images = quickViewProduct.images?.length
+                    ? quickViewProduct.images
+                    : quickViewProduct.image_url
+                      ? [quickViewProduct.image_url]
+                      : [];
+                  const variants = quickViewProduct.variants ?? [];
+                  const selectedVariant =
+                    variants.find((v) => v.id === quickViewVariantId) ?? variants[0] ?? null;
+                  const basePrice =
+                    typeof quickViewProduct.price === 'number'
+                      ? quickViewProduct.price
+                      : Number(quickViewProduct.price || 0);
+                  const modifier = selectedVariant ? Number(selectedVariant.price_modifier || 0) : 0;
+                  const effectivePrice = Math.max(0, basePrice + modifier);
+                  const compareAt =
+                    quickViewProduct.badge_discount_percent && quickViewProduct.badge_discount_percent > 0
+                      ? effectivePrice / (1 - quickViewProduct.badge_discount_percent / 100)
+                      : null;
+                  const stockQty =
+                    selectedVariant?.stock_quantity ?? (quickViewProduct.stock_quantity ?? 0);
+                  const inStock = stockQty > 0;
+
+                  return (
+                    <Grid container spacing={2.5}>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            aspectRatio: '1',
+                            bgcolor: surfaceSoft(theme),
+                            borderRadius: 1.5,
+                            overflow: 'hidden',
+                            mb: 1.5,
+                          }}
+                        >
+                          {images.length > 0 ? (
+                            <Box
+                              component="img"
+                              src={images[Math.min(quickViewImageIndex, images.length - 1)]}
+                              alt={quickViewProduct.name}
+                              sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            />
+                          ) : (
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                              <Typography color="text.secondary">No image</Typography>
+                            </Box>
+                          )}
+
+                          {images.length > 1 && (
+                            <>
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  left: 8,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  bgcolor: paperTranslucent(theme, 0.92),
+                                }}
+                                onClick={() =>
+                                  setQuickViewImageIndex((idx) => (idx <= 0 ? images.length - 1 : idx - 1))
+                                }
+                              >
+                                <ChevronLeft fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  right: 8,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  bgcolor: paperTranslucent(theme, 0.92),
+                                }}
+                                onClick={() =>
+                                  setQuickViewImageIndex((idx) => (idx >= images.length - 1 ? 0 : idx + 1))
+                                }
+                              >
+                                <ChevronRight fontSize="small" />
+                              </IconButton>
+                            </>
+                          )}
+                        </Box>
+
+                        {images.length > 1 && (
+                          <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
+                            {images.map((img, idx) => (
+                              <Box
+                                key={`${img}-${idx}`}
+                                onClick={() => setQuickViewImageIndex(idx)}
+                                sx={{
+                                  width: 62,
+                                  height: 62,
+                                  borderRadius: 1,
+                                  border: '1px solid',
+                                  borderColor: idx === quickViewImageIndex ? 'primary.main' : 'divider',
+                                  cursor: 'pointer',
+                                  overflow: 'hidden',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Box component="img" src={img} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </Box>
+                            ))}
+                          </Stack>
+                        )}
+                      </Grid>
+
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="h6" fontWeight={700} sx={{ mb: 0.75 }}>
+                          {quickViewProduct.name}
+                        </Typography>
+                        {!!quickViewProduct.category?.name && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            By {quickViewProduct.category.name}
+                          </Typography>
+                        )}
+                        {(quickViewProduct.reviews_count ?? 0) > 0 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                            <Rating value={quickViewProduct.reviews_avg_rating ?? 0} precision={0.1} readOnly size="small" />
+                            <Typography variant="caption" color="text.secondary">
+                              ({quickViewProduct.reviews_count})
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <Box sx={{ mb: 1.5 }}>
+                          {compareAt && (
+                            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                              Rs.{compareAt.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </Typography>
+                          )}
+                          <Typography variant="h5" color="primary" fontWeight={700}>
+                            Rs.{effectivePrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </Typography>
+                        </Box>
+
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                          {quickViewProduct.description || ''}
+                        </Typography>
+
+                        {variants.length > 0 && (
+                          <Box sx={{ mb: 1.5 }}>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.75 }}>
+                              Size / Variant
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              {variants.map((v) => (
+                                <Button
+                                  key={v.id}
+                                  size="small"
+                                  variant={selectedVariant?.id === v.id ? 'contained' : 'outlined'}
+                                  onClick={() => setQuickViewVariantId(v.id)}
+                                >
+                                  {v.name}
+                                </Button>
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: inStock ? 'success.main' : 'error.main',
+                            fontWeight: 600,
+                            mb: 1.25,
+                          }}
+                        >
+                          {inStock ? 'In stock' : 'Out of stock'}
+                        </Typography>
+
+                        <Divider sx={{ mb: 1.5 }} />
+
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
+                          >
+                            -
+                          </Button>
+                          <TextField
+                            type="number"
+                            size="small"
+                            label="Qty"
+                            value={quickViewQty}
+                            onChange={(e) => setQuickViewQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            inputProps={{ min: 1 }}
+                            sx={{ width: 92 }}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => setQuickViewQty((q) => q + 1)}
+                          >
+                            +
+                          </Button>
+                        </Stack>
+
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                          <Button
+                            variant="contained"
+                            onClick={handleQuickViewAddToCart}
+                            disabled={!inStock}
+                          >
+                            Add to cart
+                          </Button>
+                          <Button
+                            component={Link}
+                            href={`/products/${quickViewProduct.slug || quickViewProduct.id}`}
+                            onClick={() => setQuickViewProduct(null)}
+                          >
+                            View full details
+                          </Button>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+                  );
+                })()}
               </>
             ) : null}
           </DialogContent>

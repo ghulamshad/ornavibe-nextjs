@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
-import { Box, Typography, Avatar } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Box, Typography, Button, useTheme } from '@mui/material';
+import { neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import Slider from 'react-slick';
-import { Star } from '@mui/icons-material';
+import type { Settings } from 'react-slick';
+import Link from 'next/link';
+import Rating from '@mui/material/Rating';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import SectionContainer from '@/components/ui/SectionContainer';
-import SectionHeader from '@/components/ui/SectionHeader';
+import { resolveMediaUrl } from '@/lib/utils/media';
 
 export interface TestimonialItem {
   name: string;
@@ -17,72 +19,324 @@ export interface TestimonialItem {
   rating?: number;
 }
 
-export default function TestimonialsSection({ items }: { items: TestimonialItem[] }) {
-  const list =
-    Array.isArray(items) && items.length > 0
-      ? items
-      : ([
-          {
-            name: 'Sylvia H Green',
-            role: 'Customer',
-            quote:
-              'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.',
-            avatar_url: '',
-            rating: 5,
-          },
-        ] as TestimonialItem[]);
+export interface TestimonialsSectionProps {
+  items: TestimonialItem[];
+  title?: string;
+  exploreMoreHref?: string;
+  exploreMoreLabel?: string;
+}
 
-  const settings = {
-    dots: true,
-    infinite: list.length > 1,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 6000,
-  };
+export default function TestimonialsSection({
+  items,
+  title = 'Testimonials',
+  exploreMoreHref = '/testimonials',
+  exploreMoreLabel = 'Explore More',
+}: TestimonialsSectionProps) {
+  const theme = useTheme();
+  const list = useMemo(
+    () => (Array.isArray(items) ? items.filter((t) => t.quote?.trim() || t.name?.trim()) : []),
+    [items]
+  );
+
+  const settings: Settings = useMemo(() => {
+    const n = list.length;
+    const cap = (max: number) => Math.min(max, Math.max(1, n));
+    return {
+      centerMode: false,
+      centerPadding: '0',
+      arrows: false,
+      rows: 1,
+      infinite: false,
+      slidesToShow: n <= 1 ? 1 : n <= 2 ? 2 : 3.6,
+      slidesToScroll: 1,
+      autoplay: n > 2,
+      speed: 1000,
+      autoplaySpeed: 5000,
+      dots: false,
+      pauseOnHover: true,
+      swipe: true,
+      touchThreshold: 8,
+      responsive: [
+        {
+          breakpoint: 1440,
+          settings: {
+            slidesToShow: cap(3),
+            slidesToScroll: 1,
+            infinite: false,
+          },
+        },
+        {
+          breakpoint: 1200,
+          settings: {
+            slidesToShow: cap(2),
+            slidesToScroll: 1,
+            infinite: false,
+          },
+        },
+        {
+          breakpoint: 900,
+          settings: {
+            slidesToShow: cap(2),
+            slidesToScroll: 1,
+            infinite: false,
+          },
+        },
+        {
+          breakpoint: 600,
+          settings: {
+            slidesToShow: n <= 1 ? 1 : 1.12,
+            slidesToScroll: 1,
+            infinite: false,
+          },
+        },
+        {
+          breakpoint: 480,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            infinite: false,
+          },
+        },
+      ],
+    };
+  }, [list.length]);
+
+  if (!list.length) {
+    return null;
+  }
+
+  /** Fixed card height per breakpoint so every testimonial tile matches. */
+  const cardHeight = { xs: 300, sm: 316, md: 332, lg: 348 };
 
   return (
-    <SectionContainer variant="soft">
-      <SectionHeader
-        eyebrow="Testimonials"
-        title="What Our Clients Say About Us"
-      />
+    <Box
+      component="section"
+      className="cnt-lg"
+      sx={{
+        py: { xs: 3, sm: 4, md: 6 },
+        px: { xs: 0, sm: 0 },
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+        '& .testimonials-slick.slick-slider': { width: '100%', mb: 0 },
+        '& .testimonials-slick .slick-list': {
+          overflow: 'hidden',
+          mx: { xs: 0, sm: 0 },
+          px: { xs: 0.5, sm: 0 },
+        },
+        '& .testimonials-slick .slick-track': {
+          display: 'flex !important',
+          alignItems: 'stretch',
+        },
+        '& .testimonials-slick .slick-slide': {
+          height: 'auto',
+          display: 'flex !important',
+          px: { xs: 0.75, sm: 1 },
+          boxSizing: 'border-box',
+          '& > div': {
+            width: '100%',
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'stretch',
+          },
+        },
+      }}
+    >
+      <Box
+        className="testi_slider"
+        data-section="FeaturedCollection"
+        sx={{ maxWidth: 'xl', mx: 'auto', px: { xs: 1.5, sm: 2, md: 3 }, width: '100%' }}
+      >
+        <Box
+          className="section_title"
+          sx={{ mb: { xs: 2, md: 3 }, textAlign: { xs: 'center', md: 'left' }, px: { xs: 0.5, sm: 0 } }}
+        >
+          <Typography
+            variant="h4"
+            component="h2"
+            fontWeight={700}
+            sx={{ fontSize: { xs: '1.35rem', sm: '1.5rem', md: '2rem' }, lineHeight: { xs: 1.3, md: 1.2 } }}
+          >
+            {title}
+          </Typography>
+        </Box>
 
-      <Box sx={{ maxWidth: 720, mx: 'auto', '& .slick-dots': { bottom: -40 } }}>
-        <Slider {...settings}>
-          {list.map((t, index) => (
-            <Box key={index} sx={{ px: { xs: 0, sm: 4 }, textAlign: 'center' }}>
-              <Avatar
-                src={t.avatar_url}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  mx: 'auto',
-                  mb: 2,
-                  bgcolor: 'primary.main',
-                }}
-              >
-                {(t.name || 'U').charAt(0)}
-              </Avatar>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                {t.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t.role}
-              </Typography>
-              <Typography sx={{ fontStyle: 'italic', color: 'text.secondary', mb: 2 }}>
-                &ldquo;{t.quote}&rdquo;
-              </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                {Array.from({ length: t.rating ?? 5 }).map((_, i) => (
-                  <Star key={i} sx={{ color: 'warning.main', fontSize: 20 }} />
-                ))}
-              </Box>
-            </Box>
-          ))}
-        </Slider>
+        <Box className="product_area" sx={{ width: '100%' }}>
+          <Box className="product_container bottom" sx={{ position: 'relative', width: '100%' }}>
+            <Slider {...settings} className="testimonial_active product_row1 testimonials-slick">
+              {list.map((t, index) => {
+                const avatar = t.avatar_url?.trim() ? resolveMediaUrl(t.avatar_url) : '';
+                const rating = typeof t.rating === 'number' && t.rating > 0 ? Math.min(5, t.rating) : 5;
+
+                return (
+                  <Box
+                    key={`${t.name}-${index}`}
+                    className="single_testimonial"
+                    sx={{ outline: 'none', width: '100%', display: 'flex', alignItems: 'stretch' }}
+                  >
+                    <Box
+                      className="box"
+                      sx={{
+                        width: '100%',
+                        height: cardHeight,
+                        minHeight: cardHeight,
+                        maxHeight: cardHeight,
+                        p: { xs: 2, sm: 2.25, md: 2.5 },
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        border: 1,
+                        borderColor: 'divider',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: { xs: 1, md: 2 },
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        className="imgs flex_center"
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: { xs: 1, sm: 1.5 },
+                          mb: { xs: 1.25, sm: 1.5 },
+                          flexShrink: 0,
+                        }}
+                      >
+                        {avatar ? (
+                          <Box
+                            component="img"
+                            src={avatar}
+                            alt=""
+                            className="profile_img"
+                            loading="lazy"
+                            sx={{
+                              width: { xs: 48, sm: 52, md: 56 },
+                              height: { xs: 48, sm: 52, md: 56 },
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              flexShrink: 0,
+                              bgcolor: neutralSlate(theme, 0.12),
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            className="profile_img"
+                            sx={{
+                              width: { xs: 48, sm: 52, md: 56 },
+                              height: { xs: 48, sm: 52, md: 56 },
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                              bgcolor: 'primary.light',
+                              color: 'primary.contrastText',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: { xs: '1rem', md: '1.1rem' },
+                              fontWeight: 700,
+                            }}
+                            aria-hidden
+                          >
+                            {(t.name || 'U').charAt(0).toUpperCase()}
+                          </Box>
+                        )}
+                        <Rating
+                          name={`testi-rating-${index}`}
+                          value={rating}
+                          readOnly
+                          size="small"
+                          className="rating_img"
+                          sx={{
+                            flexShrink: 0,
+                            '& .MuiSvgIcon-root': { fontSize: { xs: '1.1rem', sm: '1.25rem' } },
+                          }}
+                        />
+                      </Box>
+
+                      <Typography
+                        component="span"
+                        className="name"
+                        fontWeight={700}
+                        sx={{
+                          mb: 0.5,
+                          flexShrink: 0,
+                          fontSize: { xs: '0.95rem', sm: '1rem' },
+                          lineHeight: 1.35,
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
+                        {t.name}
+                      </Typography>
+                      <Box sx={{ minHeight: { xs: 18, sm: 20 }, mb: 0.5, flexShrink: 0 }}>
+                        {t.role?.trim() ? (
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.35 }}>
+                            {t.role}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                      <Typography
+                        component="p"
+                        color="text.secondary"
+                        sx={{
+                          m: 0,
+                          flex: 1,
+                          minHeight: 0,
+                          display: '-webkit-box',
+                          WebkitLineClamp: { xs: 5, sm: 6, md: 7 },
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          lineHeight: { xs: 1.55, sm: 1.6 },
+                          fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        }}
+                      >
+                        {t.quote}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Slider>
+          </Box>
+        </Box>
       </Box>
-    </SectionContainer>
+
+      {exploreMoreHref ? (
+        <Box
+          className="mb-5"
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            mt: { xs: 2.5, md: 3 },
+            mb: { xs: 4, md: 5 },
+            px: { xs: 2, sm: 3 },
+          }}
+        >
+          <Button
+            component={Link}
+            href={exploreMoreHref}
+            className="btn_one"
+            variant="contained"
+            color="primary"
+            size="large"
+            fullWidth
+            sx={{
+              textTransform: 'none',
+              px: { xs: 3, sm: 4 },
+              py: { xs: 1.25, sm: 1 },
+              borderRadius: 2,
+              fontWeight: 600,
+              maxWidth: { xs: '100%', sm: 360 },
+            }}
+          >
+            {exploreMoreLabel}
+          </Button>
+        </Box>
+      ) : null}
+    </Box>
   );
 }

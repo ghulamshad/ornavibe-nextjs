@@ -10,6 +10,26 @@ export interface SiteContent {
     currency_symbol: string;
     payment_gateway_stripe_enabled?: boolean;
     payment_gateway_bank_deposit_enabled?: boolean;
+    /** Logo image URL or storage path; empty = use default `/assets/logo.jpg` on frontend */
+    logo_url?: string;
+  };
+  /** MUI storefront palette overrides (hex). Empty strings = use defaults in `@/theme`. */
+  theme?: {
+    primary?: string;
+    secondary?: string;
+    background_default?: string;
+    paper?: string;
+  };
+  topbar?: {
+    enabled?: boolean;
+    background?: string;
+    text_color?: string;
+    center_text?: string;
+    center_text_color?: string;
+    center_link?: string;
+    phone?: string;
+    phone_color?: string;
+    social_links?: Array<{ label: string; href: string; icon?: string }>;
   };
   hero: {
     title: string;
@@ -37,7 +57,11 @@ export interface SiteContent {
     cta_secondary_text: string;
     cta_secondary_href: string;
     image_url: string;
+    image_alt?: string;
+    open_in_new_tab?: boolean;
   }>;
+  /** `full_bleed` = full-width image carousel (HeroBanner); `overlay` = text-on-image slider */
+  hero_slider_variant?: 'overlay' | 'full_bleed';
   /** Three small banner cards */
   small_banners?: Array<{ eyebrow: string; title: string; cta_text: string; cta_href: string; image_url: string }>;
   /** Deal section: title + countdown end ISO */
@@ -46,6 +70,12 @@ export interface SiteContent {
   gallery?: Array<{ image_url: string; alt?: string }>;
   /** Testimonials slider */
   testimonials?: Array<{ name: string; role: string; quote: string; avatar_url?: string; rating?: number }>;
+  /** Homepage testimonials block heading + CTA (from settings) */
+  testimonials_section?: {
+    title?: string;
+    explore_more_href?: string | null;
+    explore_more_label?: string;
+  };
   /** Newsletter strip */
   newsletter?: { title: string; subtitle: string; button_text: string };
   about: {
@@ -71,6 +101,10 @@ export interface SiteContent {
     brand: string;
     company: string;
     tagline: string;
+    /** Footer strip background (hex), default dark grey */
+    background?: string;
+    /** Primary text / foreground (hex) */
+    text_color?: string;
   };
   featured: {
     title: string;
@@ -96,6 +130,24 @@ export interface SiteContent {
     subtitle: string;
     meta_title: string;
     meta_description: string;
+  };
+  /** Floating WhatsApp / phone / link strip (admin: Sticky contact) */
+  sticky_contact?: {
+    enabled: boolean;
+    placement: string;
+    edge_offset: number;
+    vertical_offset: number;
+    custom_top?: string | null;
+    custom_right?: string | null;
+    custom_bottom?: string | null;
+    custom_left?: string | null;
+    items: Array<{
+      type: string;
+      href: string;
+      image_url?: string | null;
+      label?: string | null;
+      open_in_new_tab?: boolean;
+    }>;
   };
 }
 

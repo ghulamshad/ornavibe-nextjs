@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Checkbox,
   CircularProgress,
   Alert,
   TextField,
@@ -31,11 +32,15 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchListRequest } from '@/redux/slices/admin/adminCustomers.slice';
 import { useToast } from '@/components/common/Toast';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { bulkDeleteCustomers, bulkUpdateCustomersRole } from '@/lib/api/admin.service';
+import { extractErrorMessage } from '@/lib/utils/errorHandler';
 import type { AdminCustomer } from '@/types/admin';
 
 export default function AdminCustomersPage() {
@@ -52,6 +57,11 @@ export default function AdminCustomersPage() {
   });
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuCustomer, setMenuCustomer] = useState<AdminCustomer | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkRole, setBulkRole] = useState<'customer' | 'vendor' | ''>('');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const load = () => {
     dispatch(
@@ -71,12 +81,17 @@ export default function AdminCustomersPage() {
   }, [page, rowsPerPage]);
 
   const handleApplyFilters = () => {
+    setSelectedIds(new Set());
+    setBulkRole('');
     setPage(0);
     load();
   };
 
   const handleClearFilters = () => {
     setFilters({ email: '', name: '', date_from: '', date_to: '' });
+    setSelectedIds(new Set());
+    setBulkRole('');
+    setBulkDeleteOpen(false);
     setPage(0);
     setTimeout(() => load(), 0);
   };
@@ -102,6 +117,69 @@ export default function AdminCustomersPage() {
       toast.showSuccess('Email copied');
     }
     closeMenu();
+  };
+
+  const pageRowIds = list.map((c) => String(c.id));
+  const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageRowIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pageRowIds.forEach((id) => next.delete(id));
+      else pageRowIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleRowSelected = (id: number) => {
+    const key = String(id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const runBulkSetRole = async () => {
+    if (selectedIds.size === 0) return;
+    if (!bulkRole) {
+      toast.showError('Choose a role to apply.');
+      return;
+    }
+
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds].map((id) => Number(id));
+      const { updated } = await bulkUpdateCustomersRole({ ids, role: bulkRole });
+      toast.showSuccess(`Updated ${updated} customer(s).`);
+      setSelectedIds(new Set());
+      setBulkRole('');
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const runBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds].map((id) => Number(id));
+      const { deleted } = await bulkDeleteCustomers(ids);
+      toast.showSuccess(`Deleted ${deleted} customer(s).`);
+      setSelectedIds(new Set());
+      setBulkRole('');
+      setBulkDeleteOpen(false);
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
   };
 
   return (
@@ -176,6 +254,58 @@ export default function AdminCustomersPage() {
         </Alert>
       )}
 
+      {selectedIds.size > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 2,
+            p: 1.5,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2" fontWeight={700}>
+            {selectedIds.size} selected
+          </Typography>
+          <TextField
+            size="small"
+            select
+            label="Set role"
+            value={bulkRole}
+            onChange={(e) => setBulkRole(e.target.value as 'customer' | 'vendor' | '')}
+            sx={{ minWidth: 170 }}
+          >
+            <MenuItem value="">Choose…</MenuItem>
+            <MenuItem value="customer">Customer</MenuItem>
+            <MenuItem value="vendor">Vendor</MenuItem>
+          </TextField>
+          <Button variant="contained" disabled={bulkWorking || !bulkRole} onClick={() => void runBulkSetRole()}>
+            Apply
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={bulkWorking}
+            onClick={() => {
+              setSelectedIds(new Set());
+              setBulkRole('');
+            }}
+          >
+            Clear selection
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={bulkWorking}
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+        </Paper>
+      )}
+
       {loading && list.length === 0 ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
           <CircularProgress />
@@ -186,6 +316,15 @@ export default function AdminCustomersPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={somePageSelected && !allPageSelected}
+                      checked={allPageSelected}
+                      onChange={() => toggleSelectAllOnPage()}
+                      disabled={bulkWorking || pageRowIds.length === 0}
+                      inputProps={{ 'aria-label': 'Select all customers' }}
+                    />
+                  </TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell align="right">Orders</TableCell>
@@ -197,13 +336,26 @@ export default function AdminCustomersPage() {
               <TableBody>
                 {list.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                       No customers found. Use filters or wait for new registrations.
                     </TableCell>
                   </TableRow>
                 ) : (
                   list.map((customer) => (
-                    <TableRow key={customer.id} hover>
+                    <TableRow key={customer.id} hover selected={selectedIds.has(String(customer.id))}>
+                      <TableCell
+                        padding="checkbox"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedIds.has(String(customer.id))}
+                          onChange={() => toggleRowSelected(customer.id)}
+                          disabled={bulkWorking}
+                          inputProps={{ 'aria-label': `Select ${customer.email}` }}
+                        />
+                      </TableCell>
                       <TableCell>{customer.name ?? '—'}</TableCell>
                       <TableCell>{customer.email}</TableCell>
                       <TableCell align="right">{customer.order_count ?? 0}</TableCell>
@@ -263,6 +415,19 @@ export default function AdminCustomersPage() {
           )}
         </Paper>
       )}
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected customers"
+        message={`Permanently delete ${selectedIds.size} customer(s)? This will also delete their orders.`}
+        confirmLabel="Delete all"
+        severity="destructive"
+        onConfirm={() => void runBulkDelete()}
+        onCancel={() => {
+          if (!bulkWorking) setBulkDeleteOpen(false);
+        }}
+        loading={bulkWorking}
+      />
     </Box>
   );
 }

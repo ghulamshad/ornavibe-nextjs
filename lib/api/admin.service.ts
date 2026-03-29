@@ -9,6 +9,9 @@ import type {
   AdminLandingHeroSlide,
   AdminLandingHeroBanner,
   AdminLandingSmallBanner,
+  AdminStickyContactBar,
+  AdminStickyContactItem,
+  AdminStickyContactResponse,
   Page,
 } from '@/types/admin';
 import type {
@@ -97,6 +100,20 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string | number): Promise<void> {
   await api.delete(`${PREFIX}/products/${id}`);
+}
+
+export async function bulkUpdateProducts(payload: {
+  ids: Array<string | number>;
+  is_active?: boolean;
+  is_trending?: boolean;
+}): Promise<{ updated: number }> {
+  const response = await api.patch<{ updated: number }>(`${PREFIX}/products/bulk`, payload);
+  return response.data;
+}
+
+export async function bulkDeleteProducts(ids: Array<string | number>): Promise<{ deleted: number }> {
+  const response = await api.delete<{ deleted: number }>(`${PREFIX}/products/bulk`, { data: { ids } });
+  return response.data;
 }
 
 export interface ProductImageRecord {
@@ -233,6 +250,19 @@ export async function deleteCategory(id: string): Promise<void> {
   await api.delete(`${PREFIX}/categories/${id}`);
 }
 
+export async function bulkUpdateCategories(payload: {
+  ids: Array<string>;
+  parent_id?: string | null;
+}): Promise<{ updated: number }> {
+  const response = await api.patch<{ updated: number }>(`${PREFIX}/categories/bulk`, payload);
+  return response.data;
+}
+
+export async function bulkDeleteCategories(ids: Array<string>): Promise<{ deleted: number }> {
+  const response = await api.delete<{ deleted: number }>(`${PREFIX}/categories/bulk`, { data: { ids } });
+  return response.data;
+}
+
 export async function fetchAdminOrders(params?: {
   status?: string;
   user_id?: number | string;
@@ -245,6 +275,14 @@ export async function fetchAdminOrders(params?: {
 
 export async function updateOrderStatus(orderId: string | number, status: string): Promise<Order> {
   const response = await api.patch<Order>(`${PREFIX}/orders/${orderId}/status`, { status });
+  return response.data;
+}
+
+export async function bulkUpdateOrderStatus(payload: {
+  ids: Array<string | number>;
+  status: string;
+}): Promise<{ updated: number }> {
+  const response = await api.patch<{ updated: number }>(`${PREFIX}/orders/bulk`, payload);
   return response.data;
 }
 
@@ -320,6 +358,37 @@ export async function deleteLandingHeroSlide(id: number): Promise<void> {
   await api.delete(`${PREFIX}/landing/hero-slides/${id}`);
 }
 
+export async function fetchStickyContact(): Promise<AdminStickyContactResponse> {
+  const response = await api.get<AdminStickyContactResponse>(`${PREFIX}/sticky-contact`);
+  return response.data;
+}
+
+export async function updateStickyContactBar(
+  payload: Partial<AdminStickyContactBar>
+): Promise<AdminStickyContactResponse> {
+  const response = await api.patch<AdminStickyContactResponse>(`${PREFIX}/sticky-contact`, payload);
+  return response.data;
+}
+
+export async function createStickyContactItem(
+  payload: Partial<AdminStickyContactItem>
+): Promise<AdminStickyContactItem> {
+  const response = await api.post<AdminStickyContactItem>(`${PREFIX}/sticky-contact/items`, payload);
+  return response.data;
+}
+
+export async function updateStickyContactItem(
+  id: number,
+  payload: Partial<AdminStickyContactItem>
+): Promise<AdminStickyContactItem> {
+  const response = await api.put<AdminStickyContactItem>(`${PREFIX}/sticky-contact/items/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteStickyContactItem(id: number): Promise<void> {
+  await api.delete(`${PREFIX}/sticky-contact/items/${id}`);
+}
+
 export async function fetchLandingHeroBanner(): Promise<AdminLandingHeroBanner | null> {
   const response = await api.get<AdminLandingHeroBanner | null>(`${PREFIX}/landing/hero-banner`);
   return response.data;
@@ -375,6 +444,19 @@ export async function fetchAdminCustomers(
   meta?: { current_page: number; last_page: number; per_page: number; total: number };
 }> {
   const response = await api.get(`${PREFIX}/customers`, { params });
+  return response.data;
+}
+
+export async function bulkUpdateCustomersRole(payload: {
+  ids: Array<number>;
+  role: 'customer' | 'vendor';
+}): Promise<{ updated: number }> {
+  const response = await api.patch<{ updated: number }>(`${PREFIX}/customers/bulk`, payload);
+  return response.data;
+}
+
+export async function bulkDeleteCustomers(ids: Array<number>): Promise<{ deleted: number }> {
+  const response = await api.delete<{ deleted: number }>(`${PREFIX}/customers/bulk`, { data: { ids } });
   return response.data;
 }
 
@@ -488,6 +570,19 @@ export async function updateCmsPage(
 
 export async function deleteCmsPage(id: string): Promise<void> {
   await api.delete(`${CMS_PREFIX}/pages/${id}`);
+}
+
+export async function bulkUpdateCmsPagesStatus(payload: {
+  ids: string[];
+  status: 'draft' | 'review' | 'approved' | 'published' | 'archived';
+}): Promise<{ updated: number }> {
+  const response = await api.patch<{ updated: number }>(`${CMS_PREFIX}/pages/bulk`, payload);
+  return response.data;
+}
+
+export async function bulkDeleteCmsPages(ids: string[]): Promise<{ deleted: number }> {
+  const response = await api.delete<{ deleted: number }>(`${CMS_PREFIX}/pages/bulk`, { data: { ids } });
+  return response.data;
 }
 
 export async function fetchCmsPageVersions(

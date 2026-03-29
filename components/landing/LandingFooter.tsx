@@ -10,20 +10,29 @@ import {
   Divider,
   IconButton,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Facebook, Instagram, Twitter } from '@mui/icons-material';
 import Link from 'next/link';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+import { resolveStoreLogoSrc } from '@/lib/utils/branding';
 
 export default function LandingFooter() {
-  const { footer, contact } = useSiteContent();
+  const { footer, contact, store } = useSiteContent();
+  const logoSrc = resolveStoreLogoSrc(store?.logo_url);
   const currentYear = new Date().getFullYear();
+  const bg = footer?.background?.trim() || '#212121';
+  const fg = footer?.text_color?.trim() || '#f5f5f5';
+  const fgMuted = alpha(fg, 0.68);
+  const fgSoft = alpha(fg, 0.52);
+  const fgIcon = alpha(fg, 0.78);
+  const borderSubtle = alpha(fg, 0.14);
 
   return (
     <Box
       component="footer"
       sx={{
-        bgcolor: 'grey.900',
-        color: 'grey.100',
+        bgcolor: bg,
+        color: fg,
         pt: 8,
         pb: 4,
       }}
@@ -32,13 +41,26 @@ export default function LandingFooter() {
         <Grid container spacing={4}>
           {/* Brand / about */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              {footer.brand}
-            </Typography>
-            <Typography variant="body2" color="grey.400" sx={{ mb: 2, maxWidth: 320 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box
+                component="img"
+                src={logoSrc}
+                alt={footer?.brand || 'Store'}
+                sx={{ width: 40, height: 40, mr: 1.5, objectFit: 'contain', display: 'block' }}
+              />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>
+                  {footer.brand}
+                </Typography>
+                <Typography variant="body2" sx={{ color: fgMuted }}>
+                  {footer.company}
+                </Typography>
+              </Box>
+            </Box>
+            <Typography variant="body2" sx={{ mb: 2, maxWidth: 320, color: fgMuted }}>
               {footer.tagline}
             </Typography>
-            <Typography variant="body2" color="grey.500">
+            <Typography variant="body2" sx={{ color: fgSoft }}>
               Trusted by gift lovers for curated baskets and premium wrapping.
             </Typography>
           </Grid>
@@ -60,7 +82,7 @@ export default function LandingFooter() {
                   component={Link}
                   href={link.href}
                   sx={{
-                    color: 'grey.400',
+                    color: fgMuted,
                     textDecoration: 'none',
                     fontSize: '0.875rem',
                     '&:hover': { color: 'primary.main' },
@@ -90,7 +112,7 @@ export default function LandingFooter() {
                   component={Link}
                   href={link.href}
                   sx={{
-                    color: 'grey.400',
+                    color: fgMuted,
                     textDecoration: 'none',
                     fontSize: '0.875rem',
                     '&:hover': { color: 'primary.main' },
@@ -108,45 +130,45 @@ export default function LandingFooter() {
               Contact
             </Typography>
             {contact?.email && (
-              <Typography variant="body2" color="grey.400">
+              <Typography variant="body2" sx={{ color: fgMuted }}>
                 Email:{' '}
                 <MuiLink
                   href={`mailto:${contact.email}`}
-                  sx={{ color: 'grey.200', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                  sx={{ color: fg, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
                 >
                   {contact.email}
                 </MuiLink>
               </Typography>
             )}
             {contact?.phone && (
-              <Typography variant="body2" color="grey.400">
+              <Typography variant="body2" sx={{ color: fgMuted }}>
                 Phone:{' '}
                 <MuiLink
                   href={`tel:${contact.phone}`}
-                  sx={{ color: 'grey.200', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                  sx={{ color: fg, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
                 >
                   {contact.phone}
                 </MuiLink>
               </Typography>
             )}
-            <Typography variant="body2" color="grey.400" sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ mt: 2, color: fgMuted }}>
               Follow us
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <IconButton size="small" sx={{ color: 'grey.300' }} aria-label="Facebook">
+              <IconButton size="small" sx={{ color: fgIcon }} aria-label="Facebook">
                 <Facebook fontSize="inherit" />
               </IconButton>
-              <IconButton size="small" sx={{ color: 'grey.300' }} aria-label="Instagram">
+              <IconButton size="small" sx={{ color: fgIcon }} aria-label="Instagram">
                 <Instagram fontSize="inherit" />
               </IconButton>
-              <IconButton size="small" sx={{ color: 'grey.300' }} aria-label="Twitter">
+              <IconButton size="small" sx={{ color: fgIcon }} aria-label="Twitter">
                 <Twitter fontSize="inherit" />
               </IconButton>
             </Box>
           </Grid>
         </Grid>
 
-        <Divider sx={{ my: 4, borderColor: 'grey.800' }} />
+        <Divider sx={{ my: 4, borderColor: borderSubtle }} />
 
         <Box
           sx={{
@@ -157,28 +179,28 @@ export default function LandingFooter() {
             gap: 2,
           }}
         >
-          <Typography variant="body2" color="grey.500">
+          <Typography variant="body2" sx={{ color: fgSoft }}>
             © {currentYear} {footer.company}. {footer.brand} gift baskets. All rights reserved.
           </Typography>
           <Box sx={{ display: 'flex', gap: 3 }}>
             <MuiLink
               component={Link}
               href="/legal/privacy"
-              sx={{ color: 'grey.500', textDecoration: 'none', fontSize: '0.875rem' }}
+              sx={{ color: fgSoft, textDecoration: 'none', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
             >
               Privacy
             </MuiLink>
             <MuiLink
               component={Link}
               href="/legal/terms"
-              sx={{ color: 'grey.500', textDecoration: 'none', fontSize: '0.875rem' }}
+              sx={{ color: fgSoft, textDecoration: 'none', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
             >
               Terms
             </MuiLink>
             <MuiLink
               component={Link}
               href="/legal/cookies"
-              sx={{ color: 'grey.500', textDecoration: 'none', fontSize: '0.875rem' }}
+              sx={{ color: fgSoft, textDecoration: 'none', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
             >
               Cookies
             </MuiLink>

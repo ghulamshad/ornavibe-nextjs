@@ -32,6 +32,8 @@ import {
   FormControlLabel,
   Switch,
   InputAdornment,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -54,6 +56,8 @@ import {
   updateLandingSmallBanner,
   deleteLandingSmallBanner,
   uploadCmsMedia,
+  fetchSettings,
+  updateSettings,
 } from '@/lib/api/admin.service';
 import type {
   AdminLandingHeroSlide,
@@ -72,6 +76,8 @@ const emptySlide: Partial<AdminLandingHeroSlide> = {
   cta_secondary_text: '',
   cta_secondary_href: '',
   image_url: '',
+  image_alt: '',
+  open_in_new_tab: false,
   sort_order: 0,
   is_active: true,
 };
@@ -129,19 +135,24 @@ export default function AdminLandingPage() {
   const [deleteSlideId, setDeleteSlideId] = useState<number | null>(null);
   const [deleteSmallId, setDeleteSmallId] = useState<number | null>(null);
 
+  const [heroLayout, setHeroLayout] = useState<'overlay' | 'full_bleed'>('overlay');
+  const [heroLayoutSaving, setHeroLayoutSaving] = useState(false);
+
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [slidesRes, bannerRes, smallRes] = await Promise.all([
+      const [slidesRes, bannerRes, smallRes, settingsRes] = await Promise.all([
         fetchLandingHeroSlides(),
         fetchLandingHeroBanner(),
         fetchLandingSmallBanners(),
+        fetchSettings(),
       ]);
       setSlides(slidesRes ?? []);
       setHeroBanner(bannerRes ?? null);
       setHeroBannerForm(bannerRes ?? emptyHeroBanner);
       setSmallBanners(smallRes ?? []);
+      setHeroLayout(settingsRes.site_hero_slider_variant === 'full_bleed' ? 'full_bleed' : 'overlay');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load landing content');
     } finally {
@@ -152,6 +163,20 @@ export default function AdminLandingPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const handleHeroLayoutChange = async (_: React.MouseEvent<HTMLElement>, value: 'overlay' | 'full_bleed' | null) => {
+    if (value == null) return;
+    try {
+      setHeroLayoutSaving(true);
+      await updateSettings({ site_hero_slider_variant: value });
+      setHeroLayout(value);
+      toast.showSuccess('Homepage hero layout saved');
+    } catch (e) {
+      toast.showError(e instanceof Error ? e.message : 'Failed to save hero layout');
+    } finally {
+      setHeroLayoutSaving(false);
+    }
+  };
 
   const openNewSlide = () => {
     setEditingSlide(null);
@@ -320,6 +345,24 @@ export default function AdminLandingPage() {
       {/* Tab 1: Hero Slider */}
       <Box role="tabpanel" hidden={tab !== 0} id="landing-panel-0" aria-labelledby="landing-tab-0">
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+            Storefront hero style
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Full-width banners: one image per slide, whole slide links from <strong>Primary CTA href</strong> (Tohfay-style). Text &amp; image: animated headline and buttons on top of the background image.
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            value={heroLayout}
+            onChange={handleHeroLayoutChange}
+            disabled={heroLayoutSaving || loading}
+            size="small"
+            sx={{ mb: 3 }}
+          >
+            <ToggleButton value="overlay">Text &amp; image</ToggleButton>
+            <ToggleButton value="full_bleed">Full-width image banners</ToggleButton>
+          </ToggleButtonGroup>
+
           <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2}>
             <Box>
               <Typography variant="subtitle1" fontWeight="bold">
@@ -554,6 +597,24 @@ export default function AdminLandingPage() {
             {uploadingSlideImage ? 'Uploading…' : 'Upload image'}
             <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadImage(f, 'hero', setSlideForm, setUploadingSlideImage, slideForm.title || undefined); e.target.value = ''; }} />
           </Button>
+          <TextField
+            fullWidth
+            label="Image alt text"
+            value={slideForm.image_alt ?? ''}
+            onChange={(e) => setSlideForm((p) => ({ ...p, image_alt: e.target.value }))}
+            margin="normal"
+            helperText="Accessibility; for full-width mode. If empty, the slide title (plain text) is used."
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={Boolean(slideForm.open_in_new_tab)}
+                onChange={(e) => setSlideForm((p) => ({ ...p, open_in_new_tab: e.target.checked }))}
+              />
+            }
+            label="Open primary link in new tab (external URLs)"
+            sx={{ display: 'block', mt: 1 }}
+          />
           <TextField fullWidth type="number" label="Sort order" value={slideForm.sort_order ?? 0} onChange={(e) => setSlideForm((p) => ({ ...p, sort_order: Number(e.target.value) }))} margin="normal" inputProps={{ min: 0 }} />
           <FormControlLabel control={<Switch checked={slideForm.is_active !== false} onChange={(e) => setSlideForm((p) => ({ ...p, is_active: e.target.checked }))} />} label="Active" sx={{ mt: 1, display: 'block' }} />
         </DialogContent>

@@ -10,13 +10,16 @@ import {
   CardMedia,
   CardContent,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
+import { neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import Link from 'next/link';
 import { ArrowForward } from '@mui/icons-material';
 import { fetchPublicBlogList } from '@/lib/api/cmsPublic.service';
 import type { CmsBlogListItem } from '@/types/cms';
 import SectionContainer from '@/components/ui/SectionContainer';
 import SectionHeader from '@/components/ui/SectionHeader';
+import { resolveMediaUrl } from '@/lib/utils/media';
 
 function formatDate(s: string | null) {
   if (!s) return '';
@@ -32,6 +35,7 @@ function formatDate(s: string | null) {
 }
 
 export default function BlogSection() {
+  const theme = useTheme();
   const [posts, setPosts] = useState<CmsBlogListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,11 +79,11 @@ export default function BlogSection() {
                 href={`/blog/${post.slug}`}
                 sx={{ height: '100%', flexDirection: 'column', alignItems: 'stretch' }}
               >
-                <Box sx={{ pt: '56%', position: 'relative', bgcolor: 'grey.200' }}>
+                <Box sx={{ pt: '56%', position: 'relative', bgcolor: neutralSlate(theme, 0.1) }}>
                   {post.featured_image && (
                     <CardMedia
                       component="img"
-                      image={post.featured_image}
+                      image={resolveMediaUrl(post.featured_image)}
                       alt={post.title}
                       sx={{
                         position: 'absolute',

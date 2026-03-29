@@ -24,6 +24,7 @@ import {
 import { Home, NavigateNext, ArticleOutlined } from '@mui/icons-material';
 import { fetchPublicBlogList, fetchPublicBlogCategories, fetchPublicBlogTags } from '@/lib/api/cmsPublic.service';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+import { pageHeroBg, onHeroPaper, neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import type { CmsBlogListItem, CmsBlogCategory, CmsBlogTag } from '@/types/cms';
 
 const PER_PAGE = 12;
@@ -129,8 +130,8 @@ export default function BlogIndexPage() {
       <Paper
         elevation={0}
         sx={{
-          bgcolor: 'grey.900',
-          color: 'grey.100',
+          bgcolor: pageHeroBg(theme),
+          color: onHeroPaper(theme),
           py: { xs: 4, md: 6 },
           mb: 4,
           borderRadius: 0,
@@ -138,18 +139,22 @@ export default function BlogIndexPage() {
       >
         <Container maxWidth="lg">
           <Breadcrumbs
-            separator={<NavigateNext fontSize="small" sx={{ color: 'grey.500' }} />}
-            sx={{ mb: 2, '& .MuiLink-root': { color: 'grey.400' }, '& .MuiTypography-root': { color: 'grey.300' } }}
+            separator={<NavigateNext fontSize="small" sx={{ color: onHeroPaper(theme, 0.45) }} />}
+            sx={{
+              mb: 2,
+              '& .MuiLink-root': { color: onHeroPaper(theme, 0.62) },
+              '& .MuiTypography-root': { color: onHeroPaper(theme) },
+            }}
           >
             <MuiLink component={Link} href="/" color="inherit" underline="hover">
               Home
             </MuiLink>
-            <Typography color="text.primary">{blogContent.title}</Typography>
+            <Typography>{blogContent.title}</Typography>
           </Breadcrumbs>
-          <Typography component="h1" variant="h3" fontWeight={700} gutterBottom sx={{ color: 'grey.50' }}>
+          <Typography component="h1" variant="h3" fontWeight={700} gutterBottom sx={{ color: onHeroPaper(theme) }}>
             {blogContent.title}
           </Typography>
-          <Typography variant="body1" sx={{ color: 'grey.400', maxWidth: 560 }}>
+          <Typography variant="body1" sx={{ color: onHeroPaper(theme, 0.72), maxWidth: 560 }}>
             {blogContent.subtitle}
           </Typography>
         </Container>
@@ -226,7 +231,7 @@ export default function BlogIndexPage() {
           </>
         ) : items.length === 0 ? (
           <Paper variant="outlined" sx={{ textAlign: 'center', py: 8, px: 2 }}>
-            <ArticleOutlined sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+            <ArticleOutlined sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               {hasActiveFilter ? 'No posts match the selected filter' : 'No posts yet'}
             </Typography>
@@ -279,13 +284,13 @@ export default function BlogIndexPage() {
                       <Box
                         sx={{
                           height: 200,
-                          bgcolor: 'grey.200',
+                          bgcolor: neutralSlate(theme, 0.1),
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <ArticleOutlined sx={{ fontSize: 48, color: 'grey.400' }} />
+                        <ArticleOutlined sx={{ fontSize: 48, color: 'text.disabled' }} />
                       </Box>
                     )}
                     <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>

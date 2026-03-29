@@ -1,14 +1,19 @@
 import { createTheme } from "@mui/material/styles";
 
-// Gifoy-inspired gift shop theme for Ornavibe storefront
+const BRAND_PRIMARY = "#f2acb4";
+
+// Ornavibe storefront theme
 const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#ff4f72", // Gifoy pink
+      main: BRAND_PRIMARY,
+      light: "#f7c8ce",
+      dark: "#cf8f96",
+      contrastText: "#1b1b1f",
     },
     secondary: {
-      main: "#9b87f5", // soft violet accent used in hero bg
+      main: BRAND_PRIMARY,
     },
     background: {
       default: "#ffffff",
@@ -16,7 +21,7 @@ const theme = createTheme({
       // Soft section background (e.g. light gray / tint)
       sectionSoft: "#f9fafb",
       // Higher contrast section background (e.g. for highlighted bands)
-      sectionContrast: "#fff0f4",
+      sectionContrast: "#fdf1f4",
     } as any,
     text: {
       primary: "#1b1b1f",
@@ -71,7 +76,7 @@ const theme = createTheme({
         {
           props: { variant: "contained", color: "primary" },
           style: {
-            boxShadow: "0 18px 38px rgba(255,79,114,0.45)",
+            boxShadow: "0 18px 38px rgba(242,172,180,0.45)",
           },
         },
       ],

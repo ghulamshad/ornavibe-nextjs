@@ -9,7 +9,9 @@ import {
   Button,
   IconButton,
   Rating,
+  useTheme,
 } from '@mui/material';
+import { paperTranslucent, scrim, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
@@ -51,6 +53,7 @@ export default function ProductCard({
   isWishlisted,
   viewMode = 'grid',
 }: ProductCardProps) {
+  const theme = useTheme();
   const [hover, setHover] = useState(false);
   const href = `/products/${product.slug || product.id}`;
   const price =
@@ -72,7 +75,7 @@ export default function ProductCard({
         aspectRatio: '1',
         width: isList ? 160 : '100%',
         minWidth: isList ? 160 : undefined,
-        bgcolor: 'grey.100',
+        bgcolor: surfaceSoft(theme),
         overflow: 'hidden',
         flexShrink: 0,
       }}
@@ -95,7 +98,7 @@ export default function ProductCard({
                   : product.badge_type === 'hot'
                     ? 'error.main'
                     : 'primary.main',
-            color: 'white',
+            color: 'common.white',
             typography: 'caption',
             fontWeight: 700,
           }}
@@ -116,12 +119,12 @@ export default function ProductCard({
             top: 8,
             right: 8,
             zIndex: 2,
-            bgcolor: 'rgba(255,255,255,0.9)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,1)' },
+            bgcolor: paperTranslucent(theme, 0.92),
+            '&:hover': { bgcolor: paperTranslucent(theme, 1) },
           }}
         >
           {isWishlisted ? (
-            <FavoriteIcon sx={{ color: '#ff4f72', fontSize: 20 }} />
+            <FavoriteIcon sx={{ color: 'primary.main', fontSize: 20 }} />
           ) : (
             <FavoriteBorderIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
           )}
@@ -166,14 +169,14 @@ export default function ProductCard({
             justifyContent: 'center',
             gap: 0.5,
             p: 1,
-            bgcolor: 'rgba(0,0,0,0.5)',
+            bgcolor: scrim(theme, 0.5),
             zIndex: 1,
           }}
         >
           {onQuickView && (
             <IconButton
               size="small"
-              sx={{ bgcolor: 'white', color: 'text.primary' }}
+              sx={{ bgcolor: 'background.paper', color: 'text.primary' }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -187,7 +190,7 @@ export default function ProductCard({
           {onAddToCart && (
             <IconButton
               size="small"
-              sx={{ bgcolor: 'white', color: 'text.primary' }}
+              sx={{ bgcolor: 'background.paper', color: 'text.primary' }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -273,15 +276,11 @@ export default function ProductCard({
       }}
     >
       <Box
-        component={Link}
-        href={href}
         sx={{
           display: 'flex',
           flexDirection: isList ? 'row' : 'column',
           flex: 1,
           minWidth: 0,
-          textDecoration: 'none',
-          color: 'inherit',
         }}
       >
         {imageBlock}

@@ -17,6 +17,7 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
+import { usePublicSiteBranding } from '@/hooks/usePublicSiteBranding';
 import {
   Close as CloseIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -31,6 +32,8 @@ import {
   Description as PagesIcon,
   Settings as SettingsIcon,
   Store as StoreIcon,
+  MenuBook as MenusIcon,
+  ContactPhone as StickyContactIcon,
 } from '@mui/icons-material';
 
 export const drawerWidth = 280;
@@ -46,11 +49,13 @@ const ORNAVIBE_NAV_ITEMS: NavItem[] = [
   { title: 'Dashboard', path: '/admin/dashboard', icon: <DashboardIcon /> },
   { title: 'Products', path: '/admin/products', icon: <ProductsIcon /> },
   { title: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },
+  { title: 'Menus', path: '/admin/menus', icon: <MenusIcon /> },
   { title: 'Orders', path: '/admin/orders', icon: <OrdersIcon /> },
   { title: 'Payments', path: '/admin/payments', icon: <PaymentIcon /> },
   { title: 'Inventory', path: '/admin/inventory', icon: <InventoryAlertIcon /> },
   { title: 'Customers', path: '/admin/customers', icon: <CustomersIcon /> },
   { title: 'Landing', path: '/admin/landing', icon: <StoreIcon /> },
+  { title: 'Sticky contact', path: '/admin/sticky-contact', icon: <StickyContactIcon /> },
   // Legacy static/legal pages (Terms, Privacy, Cookies)
   { title: 'Legal pages', path: '/admin/pages', icon: <PagesIcon /> },
   // New headless CMS modules
@@ -77,6 +82,7 @@ export default function AdminSidebar({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
+  const branding = usePublicSiteBranding();
 
   const isActive = (path: string) => {
     if (path === '/admin/dashboard') {
@@ -99,14 +105,24 @@ export default function AdminSidebar({
         }}
       >
         {open && (
-          <>
-            <Typography variant="h6" noWrap component="div" fontWeight="bold">
-              Ornavibe
-            </Typography>
-            <Typography variant="caption" sx={{ ml: 1, opacity: 0.8 }}>
-              Rason Business · Admin
-            </Typography>
-          </>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+            {branding ? (
+              <Box
+                component="img"
+                src={branding.logoSrc}
+                alt=""
+                sx={{ height: 32, width: 'auto', maxWidth: 88, objectFit: 'contain', flexShrink: 0 }}
+              />
+            ) : null}
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" noWrap component="div" fontWeight="bold">
+                {branding?.brandName ?? 'Admin'}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }} noWrap>
+                {branding?.companyLine ?? 'Admin'}
+              </Typography>
+            </Box>
+          </Box>
         )}
         {!isMobile && onToggle && (
           <IconButton

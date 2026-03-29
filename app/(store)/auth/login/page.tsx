@@ -18,10 +18,15 @@ import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { loginRequest } from '@/redux/slices/auth.slice';
+import { useSiteContent } from '@/contexts/SiteContentContext';
+import { resolveStoreLogoSrc } from '@/lib/utils/branding';
 
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { footer, store } = useSiteContent();
+  const logoSrc = resolveStoreLogoSrc(store?.logo_url);
+  const brandLine = [footer?.brand, footer?.company].filter(Boolean).join(' · ') || 'Sign in';
   const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -73,8 +78,16 @@ export default function LoginPage() {
             maxWidth: 400,
           }}
         >
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Box
+              component="img"
+              src={logoSrc}
+              alt={footer?.brand || 'Store'}
+              sx={{ height: { xs: 44, sm: 52 }, width: 'auto', maxWidth: 200, objectFit: 'contain' }}
+            />
+          </Box>
           <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom align="center" fontWeight="bold">
-            Ornavibe · Rason Business
+            {brandLine}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
             Sign in to your account

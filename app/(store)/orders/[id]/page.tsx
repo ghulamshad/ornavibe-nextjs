@@ -18,7 +18,9 @@ import {
   TableRow,
   Chip,
   Grid,
+  useTheme,
 } from '@mui/material';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
 import Link from 'next/link';
@@ -30,6 +32,7 @@ import { useSiteContent } from '@/contexts/SiteContentContext';
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function OrderDetailPage() {
+  const theme = useTheme();
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
@@ -148,7 +151,7 @@ export default function OrderDetailPage() {
                     : order.payments!.map((p: { gateway: string }) => p.gateway).join(', ')}
                 </Typography>
                 {order.bank_account && (order.bank_account.account_name || order.bank_account.account_number || order.bank_account.bank_name) && (
-                  <Box sx={{ mt: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <Box sx={{ mt: 2, p: 1.5, bgcolor: surfaceSoft(theme), borderRadius: 1 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       Bank account details
                     </Typography>

@@ -25,7 +25,9 @@ import {
   ListItemButton,
   IconButton,
   Link as MuiLink,
+  useTheme,
 } from '@mui/material';
+import { surfaceSoft, neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import { Home, NavigateNext, Search as SearchIcon, Clear as ClearIcon, Category as CategoryIcon } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -59,6 +61,7 @@ function filterCategories(
 }
 
 export default function StoreCategoriesPage() {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -234,7 +237,7 @@ export default function StoreCategoriesPage() {
               </Grid>
             ) : filtered.length === 0 ? (
               <Paper variant="outlined" sx={{ textAlign: 'center', py: 8, px: 2 }}>
-                <CategoryIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <CategoryIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   {hasActiveFilter ? 'No categories match the filters' : 'No categories yet'}
                 </Typography>
@@ -258,7 +261,7 @@ export default function StoreCategoriesPage() {
                         sx={{ height: '100%', flexDirection: 'column', alignItems: 'stretch' }}
                       >
                         {cat.image_url ? (
-                          <Box sx={{ aspectRatio: '16/10', bgcolor: 'grey.100' }}>
+                          <Box sx={{ aspectRatio: '16/10', bgcolor: surfaceSoft(theme) }}>
                             <CardMedia
                               component="img"
                               image={cat.image_url}
@@ -270,13 +273,13 @@ export default function StoreCategoriesPage() {
                           <Box
                             sx={{
                               aspectRatio: '16/10',
-                              bgcolor: 'grey.100',
+                              bgcolor: neutralSlate(theme, 0.1),
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}
                           >
-                            <CategoryIcon sx={{ fontSize: 48, color: 'grey.400' }} />
+                            <CategoryIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                           </Box>
                         )}
                         <CardContent sx={{ p: 2, flex: 1 }}>

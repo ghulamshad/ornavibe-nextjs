@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Send } from '@mui/icons-material';
 
 export interface NewsletterCopy {
@@ -11,6 +12,7 @@ export interface NewsletterCopy {
 }
 
 export default function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -82,7 +84,7 @@ export default function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
                 color: 'primary.main',
                 borderRadius: 2,
                 px: 3,
-                '&:hover': { bgcolor: 'grey.100' },
+                '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.06) },
               }}
             >
               {status === 'loading' ? '...' : buttonText}

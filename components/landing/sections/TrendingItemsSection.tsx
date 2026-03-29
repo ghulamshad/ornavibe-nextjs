@@ -17,6 +17,8 @@ import Slider, { Settings } from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import { resolveMediaUrl } from '@/lib/utils/media';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 
 const badgeForProduct = (product: Product, index: number): { label: string } | null => {
   // If admin explicitly chose a badge, prefer that
@@ -65,7 +67,7 @@ const badgeForProduct = (product: Product, index: number): { label: string } | n
 };
 
 const hasImage = (p: Product) => !!(p.images?.[0] || p.image_url);
-const imageFor = (p: Product) => (p.images?.[0] ? p.images[0] : p.image_url || '');
+const imageFor = (p: Product) => resolveMediaUrl(p.images?.[0] ? p.images[0] : p.image_url || '');
 
 interface TrendingCopy {
   title?: string;
@@ -188,7 +190,7 @@ export default function TrendingItemsSection({ copy }: { copy?: TrendingCopy }) 
                       <Box
                         sx={{
                           position: 'relative',
-                          bgcolor: 'grey.100',
+                          bgcolor: (t) => surfaceSoft(t),
                           aspectRatio: '1',
                           overflow: 'hidden',
                         }}
@@ -238,13 +240,13 @@ export default function TrendingItemsSection({ copy }: { copy?: TrendingCopy }) 
                               fontSize: '0.7rem',
                               fontWeight: 600,
                               textTransform: 'uppercase',
-                              bgcolor:
+                              bgcolor: (t) =>
                                 badge.label === 'Out Of Stock'
-                                  ? 'grey.800'
+                                  ? t.palette.grey[800]
                                   : badge.label.includes('% Off')
-                                  ? '#ff4f72'
-                                  : '#1fbf75',
-                              color: '#ffffff',
+                                    ? t.palette.primary.main
+                                    : t.palette.success.main,
+                              color: 'common.white',
                             }}
                           >
                             {badge.label}

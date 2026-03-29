@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Checkbox,
   CircularProgress,
   Alert,
   IconButton,
@@ -49,6 +50,8 @@ import {
   createCmsPage,
   updateCmsPage,
   deleteCmsPage,
+  bulkUpdateCmsPagesStatus,
+  bulkDeleteCmsPages,
   fetchCmsPageVersions,
   rollbackCmsPage,
 } from '@/lib/api/admin.service';
@@ -119,6 +122,10 @@ export default function AdminCmsPagesPage() {
   const [form, setForm] = useState<PageFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<Status | ''>('');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuPage, setMenuPage] = useState<CmsPageListItem | null>(null);
   const [versionsOpen, setVersionsOpen] = useState(false);
@@ -145,6 +152,12 @@ export default function AdminCmsPagesPage() {
 
   useEffect(() => {
     loadPages(page, appliedFilters.search, appliedFilters.status);
+  }, [page, appliedFilters]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setBulkStatus('');
+    setBulkDeleteOpen(false);
   }, [page, appliedFilters]);
 
   const handleApplyFilters = () => {
@@ -236,6 +249,67 @@ export default function AdminCmsPagesPage() {
       toast.showError(msg ?? 'Failed to save page.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const pageRowIds = items.map((p) => p.id);
+  const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageRowIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pageRowIds.forEach((id) => next.delete(id));
+      else pageRowIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleRowSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const runBulkStatus = async () => {
+    if (selectedIds.size === 0) return;
+    if (!bulkStatus) {
+      toast.showError('Choose a status to apply.');
+      return;
+    }
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds];
+      const { updated } = await bulkUpdateCmsPagesStatus({ ids, status: bulkStatus });
+      toast.showSuccess(`Updated ${updated} page(s).`);
+      setSelectedIds(new Set());
+      setBulkStatus('');
+      loadPages(page, appliedFilters.search, appliedFilters.status);
+    } catch {
+      toast.showError('Failed to update pages.');
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const runBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds];
+      const { deleted } = await bulkDeleteCmsPages(ids);
+      toast.showSuccess(`Deleted ${deleted} page(s).`);
+      setSelectedIds(new Set());
+      setBulkStatus('');
+      setBulkDeleteOpen(false);
+      loadPages(page, appliedFilters.search, appliedFilters.status);
+    } catch {
+      toast.showError('Failed to delete pages.');
+    } finally {
+      setBulkWorking(false);
     }
   };
 
@@ -339,6 +413,61 @@ export default function AdminCmsPagesPage() {
         </Alert>
       )}
 
+      {selectedIds.size > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 2,
+            p: 1.5,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2" fontWeight={700}>
+            {selectedIds.size} selected
+          </Typography>
+          <TextField
+            size="small"
+            select
+            label="Set status"
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value as Status | '')}
+            sx={{ minWidth: 180 }}
+          >
+            <MenuItem value="">Choose…</MenuItem>
+            {STATUS_OPTIONS.map((s) => (
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button variant="contained" disabled={bulkWorking || !bulkStatus} onClick={() => void runBulkStatus()}>
+            Apply
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={bulkWorking}
+            onClick={() => {
+              setSelectedIds(new Set());
+              setBulkStatus('');
+            }}
+          >
+            Clear selection
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            disabled={bulkWorking}
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+        </Paper>
+      )}
+
       {loading && items.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 280 }}>
           <CircularProgress />
@@ -349,6 +478,15 @@ export default function AdminCmsPagesPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={somePageSelected && !allPageSelected}
+                      checked={allPageSelected}
+                      onChange={() => toggleSelectAllOnPage()}
+                      disabled={bulkWorking || pageRowIds.length === 0}
+                      inputProps={{ 'aria-label': 'Select all pages' }}
+                    />
+                  </TableCell>
                   <TableCell>Slug</TableCell>
                   <TableCell>Title</TableCell>
                   <TableCell>Status</TableCell>
@@ -360,7 +498,7 @@ export default function AdminCmsPagesPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                       {hasActiveFilter
                         ? 'No pages match the filters. Try different criteria or clear filters.'
                         : 'No CMS pages yet. Add one to get started.'}
@@ -368,7 +506,15 @@ export default function AdminCmsPagesPage() {
                   </TableRow>
                 ) : (
                   items.map((p) => (
-                    <TableRow key={p.id} hover>
+                    <TableRow key={p.id} hover selected={selectedIds.has(p.id)}>
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(p.id)}
+                          onChange={() => toggleRowSelected(p.id)}
+                          disabled={bulkWorking}
+                          inputProps={{ 'aria-label': `Select ${p.slug}` }}
+                        />
+                      </TableCell>
                       <TableCell sx={{ fontFamily: 'monospace' }}>{p.slug}</TableCell>
                       <TableCell>{p.title}</TableCell>
                       <TableCell>
@@ -558,6 +704,17 @@ export default function AdminCmsPagesPage() {
         severity="destructive"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteId(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected pages"
+        message={`Permanently delete ${selectedIds.size} page(s)? This will remove them from the CMS and invalidate cache.`}
+        confirmLabel="Delete all"
+        severity="destructive"
+        onConfirm={() => void runBulkDelete()}
+        onCancel={() => setBulkDeleteOpen(false)}
+        loading={bulkWorking}
       />
     </Box>
   );

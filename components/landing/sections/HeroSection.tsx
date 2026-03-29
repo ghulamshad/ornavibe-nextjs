@@ -11,8 +11,15 @@ import {
   useMediaQuery,
   Stack,
 } from '@mui/material';
+import { alpha, darken } from '@mui/material/styles';
 import { ArrowForward } from '@mui/icons-material';
 import Link from 'next/link';
+import {
+  heroDecorativeSpots,
+  heroRadialBackground,
+  cardSpotlightGradient,
+  elevatedCardShadow,
+} from '@/lib/theme/storefrontSurfaces';
 
 interface HeroContent {
   title: string;
@@ -37,8 +44,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
         position: 'relative',
         pt: { xs: 10, md: 14 },
         pb: { xs: 10, md: 14 },
-        background:
-          'radial-gradient(circle at top left, #ffe7f0 0, #ffffff 45%, #f7f4ff 100%)',
+        background: heroRadialBackground(theme),
         color: 'text.primary',
         overflow: 'hidden',
       }}
@@ -52,8 +58,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
           right: 0,
           bottom: 0,
           opacity: 0.7,
-          backgroundImage:
-            'radial-gradient(circle at 18% 40%, rgba(255,79,114,0.12) 0, transparent 55%), radial-gradient(circle at 82% 75%, rgba(155,135,245,0.12) 0, transparent 55%)',
+          backgroundImage: heroDecorativeSpots(theme),
         }}
       />
 
@@ -66,7 +71,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
               sx={{
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: '#ff4f72',
+                color: 'primary.main',
                 fontWeight: 600,
                 mb: 1.5,
               }}
@@ -114,21 +119,18 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                 component={Link}
                 href="/products"
                 variant="contained"
+                color="primary"
                 size="large"
                 endIcon={<ArrowForward />}
                 sx={{
-                  bgcolor: '#ff4f72',
-                  color: '#ffffff',
                   px: 4,
                   py: 1.5,
                   fontSize: '1rem',
                   fontWeight: 600,
                   borderRadius: 999,
                   textTransform: 'none',
-                  boxShadow: '0 18px 38px rgba(255,79,114,0.45)',
                   '&:hover': {
-                    bgcolor: '#ff315c',
-                    boxShadow: '0 20px 45px rgba(255,79,114,0.55)',
+                    bgcolor: darken(theme.palette.primary.main, 0.12),
                     transform: 'translateY(-2px)',
                   },
                   transition: 'all 0.3s ease',
@@ -142,7 +144,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                 variant="outlined"
                 size="large"
                 sx={{
-                  borderColor: 'rgba(0,0,0,0.08)',
+                  borderColor: 'divider',
                   color: 'text.primary',
                   px: 4,
                   py: 1.5,
@@ -151,8 +153,8 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                   borderRadius: 999,
                   textTransform: 'none',
                   '&:hover': {
-                    borderColor: 'rgba(0,0,0,0.14)',
-                    bgcolor: 'rgba(255,255,255,0.8)',
+                    borderColor: 'text.secondary',
+                    bgcolor: alpha(theme.palette.text.primary, 0.04),
                   },
                 }}
               >
@@ -200,7 +202,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                 maxWidth: 460,
                 borderRadius: 4,
                 bgcolor: 'background.paper',
-                boxShadow: '0 24px 70px rgba(40,45,80,0.18)',
+                boxShadow: elevatedCardShadow(theme),
                 p: 2,
                 overflow: 'hidden',
               }}
@@ -215,8 +217,8 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                   px: 1.5,
                   py: 0.5,
                   borderRadius: 999,
-                  bgcolor: '#fff0f4',
-                  color: '#ff4f72',
+                  bgcolor: alpha(theme.palette.primary.main, 0.12),
+                  color: 'primary.main',
                   fontSize: '0.75rem',
                   fontWeight: 600,
                 }}
@@ -227,12 +229,11 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                 sx={{
                   borderRadius: 3,
                   height: 260,
-                  background:
-                    'linear-gradient(135deg, #ffb2c4, #ff4f72)',
+                  background: cardSpotlightGradient(theme),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff',
+                  color: 'common.white',
                   fontWeight: 700,
                   fontSize: '1.1rem',
                   mb: 2,
@@ -253,10 +254,7 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                 Curated premium gift set with free wrapping and handwritten card.
               </Typography>
               <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: '#ff4f72' }}
-                >
+                <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
                   $29.99
                 </Typography>
                 <Button
@@ -264,12 +262,12 @@ export default function HeroSection({ content, stats }: { content: HeroContent; 
                   href="/products"
                   size="small"
                   variant="contained"
+                  color="primary"
                   sx={{
                     ml: 'auto',
                     borderRadius: 999,
                     px: 2.5,
-                    bgcolor: '#ff4f72',
-                    '&:hover': { bgcolor: '#ff315c' },
+                    '&:hover': { bgcolor: darken(theme.palette.primary.main, 0.1) },
                   }}
                 >
                   Shop Now

@@ -12,6 +12,7 @@ import {
   MenuItem,
   useTheme,
   useMediaQuery,
+  Skeleton,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
 import { logout } from "@/redux/slices/auth.slice";
+import { usePublicSiteBranding } from "@/hooks/usePublicSiteBranding";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -35,6 +37,7 @@ export default function AdminHeader({ onMenuClick, sidebarWidth = 280 }: AdminHe
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const branding = usePublicSiteBranding();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -89,9 +92,24 @@ export default function AdminHeader({ onMenuClick, sidebarWidth = 280 }: AdminHe
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            Admin Dashboard
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexGrow: 1, minWidth: 0 }}>
+            {branding ? (
+              <Box
+                component="img"
+                src={branding.logoSrc}
+                alt={branding.brandName}
+                sx={{ height: 36, width: 'auto', maxWidth: 140, objectFit: 'contain', display: { xs: 'none', sm: 'block' } }}
+              />
+            ) : (
+              <Skeleton variant="rounded" width={120} height={36} sx={{ display: { xs: 'none', sm: 'block' } }} />
+            )}
+            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
+              {branding?.brandName ?? 'Admin'}
+              <Typography component="span" variant="body2" color="text.secondary" sx={{ display: { xs: 'none', md: 'inline' }, ml: 1 }}>
+                · Dashboard
+              </Typography>
+            </Typography>
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="body2" color="textSecondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
               {user?.email || 'Admin'}

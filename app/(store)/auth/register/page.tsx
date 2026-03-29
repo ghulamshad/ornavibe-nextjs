@@ -20,10 +20,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { registerRequest } from '@/redux/slices/auth.slice';
 import type { RegisterPayload } from '@/types/auth';
+import { useSiteContent } from '@/contexts/SiteContentContext';
+import { resolveStoreLogoSrc } from '@/lib/utils/branding';
 
 export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { footer, store } = useSiteContent();
+  const logoSrc = resolveStoreLogoSrc(store?.logo_url);
+  const brandLine = [footer?.brand, footer?.company].filter(Boolean).join(' · ') || 'Create account';
   const { registerLoading, registerError, registerSuccess, isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
@@ -88,13 +93,16 @@ export default function RegisterPage() {
         }}
       >
         <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 }, width: '100%', maxWidth: 400 }}>
-          <Typography
-            variant={isMobile ? 'h5' : 'h4'}
-            gutterBottom
-            align="center"
-            fontWeight="bold"
-          >
-            Ornavibe · Rason Business
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Box
+              component="img"
+              src={logoSrc}
+              alt={footer?.brand || 'Store'}
+              sx={{ height: { xs: 44, sm: 52 }, width: 'auto', maxWidth: 200, objectFit: 'contain' }}
+            />
+          </Box>
+          <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom align="center" fontWeight="bold">
+            {brandLine}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
             Create your account — Gift baskets for every occasion

@@ -36,7 +36,12 @@ import {
   ListItemIcon,
   Link as MuiLink,
   Tooltip,
+  Checkbox,
 } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import BlockIcon from '@mui/icons-material/Block';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
@@ -66,9 +71,12 @@ import {
   updateProductVariant,
   deleteProductVariant,
   uploadCmsMedia,
+  bulkUpdateProducts,
+  bulkDeleteProducts,
   type ProductImageRecord,
   type ProductVariantRecord,
 } from '@/lib/api/admin.service';
+import { extractErrorMessage } from '@/lib/utils/errorHandler';
 
 const defaultProductForm = {
   name: '',
@@ -115,6 +123,9 @@ export default function AdminProductsPage() {
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [uploadingMainImage, setUploadingMainImage] = useState(false);
   const [uploadingGalleryImages, setUploadingGalleryImages] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCategoriesRequest());
@@ -140,11 +151,13 @@ export default function AdminProductsPage() {
   }, [dispatch, page, rowsPerPage]);
 
   const handleApplyFilters = () => {
+    setSelectedIds(new Set());
     setPage(0);
     load();
   };
 
   const handleClearFilters = () => {
+    setSelectedIds(new Set());
     setFilters({
       search: '',
       category_id: '',
@@ -380,6 +393,73 @@ export default function AdminProductsPage() {
     if (deleteId != null) dispatch(deleteRequest(deleteId));
   };
 
+  const displayList = list;
+  const total = meta?.total ?? 0;
+
+  const pageRowIds = React.useMemo(() => displayList.map((p) => String(p.id)), [displayList]);
+  const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageRowIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const everyOnPageSelected =
+        pageRowIds.length > 0 && pageRowIds.every((id) => next.has(id));
+      if (everyOnPageSelected) {
+        pageRowIds.forEach((id) => next.delete(id));
+      } else {
+        pageRowIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleRowSelected = (id: string | number) => {
+    const key = String(id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const runBulkPatch = async (patch: { is_active?: boolean; is_trending?: boolean }) => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds].map((id) => (/^\d+$/.test(id) ? Number(id) : id));
+      const { updated } = await bulkUpdateProducts({
+        ids,
+        ...patch,
+      });
+      toast.showSuccess(`Updated ${updated} product(s).`);
+      setSelectedIds(new Set());
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const runBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds].map((id) => (/^\d+$/.test(id) ? Number(id) : id));
+      const { deleted } = await bulkDeleteProducts(ids);
+      toast.showSuccess(`Deleted ${deleted} product(s).`);
+      setBulkDeleteOpen(false);
+      setSelectedIds(new Set());
+      load();
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
   const prevSaveLoading = React.useRef(saveLoading);
   useEffect(() => {
     if (prevSaveLoading.current && !saveLoading && !error) toast.showSuccess('Product saved');
@@ -392,14 +472,16 @@ export default function AdminProductsPage() {
       if (error) toast.showError(error);
       else if (deleteId != null) {
         toast.showSuccess('Product deleted');
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(String(deleteId));
+          return next;
+        });
         setDeleteId(null);
       }
     }
     prevDeleteLoading.current = deleteLoading;
   }, [deleteLoading, error, deleteId, toast]);
-
-  const displayList = list;
-  const total = meta?.total ?? 0;
 
   const openMenu = (e: React.MouseEvent<HTMLElement>, p: Product) => {
     e.preventDefault();
@@ -524,6 +606,76 @@ export default function AdminProductsPage() {
           {error}
         </Alert>
       )}
+
+      {selectedIds.size > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 2,
+            p: 1.5,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            bgcolor: 'action.selected',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" fontWeight={700} sx={{ mr: 0.5 }}>
+            {selectedIds.size} selected
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<CheckCircleOutlineIcon />}
+            disabled={bulkWorking}
+            onClick={() => void runBulkPatch({ is_active: true })}
+          >
+            Activate
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<BlockIcon />}
+            disabled={bulkWorking}
+            onClick={() => void runBulkPatch({ is_active: false })}
+          >
+            Deactivate
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<WhatshotIcon />}
+            disabled={bulkWorking}
+            onClick={() => void runBulkPatch({ is_trending: true })}
+          >
+            Mark trending
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<RemoveCircleOutlineIcon />}
+            disabled={bulkWorking}
+            onClick={() => void runBulkPatch({ is_trending: false })}
+          >
+            Clear trending
+          </Button>
+          <Button size="small" variant="outlined" disabled={bulkWorking} onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </Button>
+          <Button
+            size="small"
+            color="error"
+            variant="contained"
+            startIcon={<DeleteOutlineIcon />}
+            disabled={bulkWorking}
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+        </Paper>
+      )}
+
       {loading && list.length === 0 ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
           <CircularProgress />
@@ -534,6 +686,15 @@ export default function AdminProductsPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={somePageSelected && !allPageSelected}
+                      checked={allPageSelected}
+                      onChange={toggleSelectAllOnPage}
+                      disabled={displayList.length === 0 || loading}
+                      inputProps={{ 'aria-label': 'Select all products on this page' }}
+                    />
+                  </TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Slug</TableCell>
                   <TableCell align="right">Price</TableCell>
@@ -548,7 +709,7 @@ export default function AdminProductsPage() {
               <TableBody>
                 {displayList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                       {filters.search || filters.category_id || filters.is_active !== '' || filters.is_trending !== '' || filters.low_stock
                         ? 'No products match the filters. Try different criteria or clear filters.'
                         : 'No products yet. Add one to get started.'}
@@ -556,7 +717,20 @@ export default function AdminProductsPage() {
                   </TableRow>
                 ) : (
                   displayList.map((p) => (
-                    <TableRow key={String(p.id)}>
+                    <TableRow key={String(p.id)} selected={selectedIds.has(String(p.id))} hover>
+                      <TableCell
+                        padding="checkbox"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedIds.has(String(p.id))}
+                          onChange={() => toggleRowSelected(p.id)}
+                          disabled={bulkWorking}
+                          inputProps={{ 'aria-label': `Select ${p.name}` }}
+                        />
+                      </TableCell>
                       <TableCell>{p.name}</TableCell>
                       <TableCell>{p.slug ?? '—'}</TableCell>
                       <TableCell align="right">{formatPrice(p.price)}</TableCell>
@@ -1059,6 +1233,17 @@ export default function AdminProductsPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteId(null)}
         loading={deleteLoading}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected products"
+        message={`Permanently delete ${selectedIds.size} product(s)? Related images and variants will be removed.`}
+        confirmLabel="Delete all"
+        severity="destructive"
+        onConfirm={() => void runBulkDelete()}
+        onCancel={() => setBulkDeleteOpen(false)}
+        loading={bulkWorking}
       />
     </Box>
   );

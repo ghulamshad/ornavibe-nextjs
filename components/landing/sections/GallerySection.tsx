@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Grid, Modal, IconButton } from '@mui/material';
+import { Box, Typography, Grid, Modal, IconButton, useTheme } from '@mui/material';
+import { scrim, neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import { Close } from '@mui/icons-material';
 import SectionContainer from '@/components/ui/SectionContainer';
 import SectionHeader from '@/components/ui/SectionHeader';
+import { resolveMediaUrl } from '@/lib/utils/media';
 
 export interface GalleryImage {
   image_url: string;
@@ -12,6 +14,7 @@ export interface GalleryImage {
 }
 
 export default function GallerySection({ images }: { images: GalleryImage[] }) {
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<GalleryImage | null>(null);
 
@@ -42,14 +45,14 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 pt: '100%',
-                bgcolor: 'grey.200',
+                bgcolor: neutralSlate(theme, 0.1),
                 '&:hover .gallery-overlay': { opacity: 1 },
               }}
             >
               {item.image_url ? (
                 <Box
                   component="img"
-                  src={item.image_url}
+                  src={resolveMediaUrl(item.image_url)}
                   alt={item.alt || ''}
                   sx={{
                     position: 'absolute',
@@ -68,7 +71,7 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    bgcolor: 'grey.300',
+                    bgcolor: neutralSlate(theme, 0.14),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -83,7 +86,7 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  bgcolor: 'rgba(0,0,0,0.4)',
+                  bgcolor: scrim(theme, 0.4),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -91,7 +94,7 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
                   transition: 'opacity 0.2s',
                 }}
               >
-                <Typography variant="h4" color="white">
+                <Typography variant="h4" sx={{ color: 'common.white' }}>
                   +
                 </Typography>
               </Box>
@@ -119,9 +122,9 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
               position: 'absolute',
               top: -48,
               right: 0,
-              color: 'white',
-              bgcolor: 'rgba(0,0,0,0.5)',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+              color: 'common.white',
+              bgcolor: scrim(theme, 0.5),
+              '&:hover': { bgcolor: scrim(theme, 0.72) },
             }}
           >
             <Close />
@@ -129,7 +132,7 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
           {selected?.image_url && (
             <Box
               component="img"
-              src={selected.image_url}
+              src={resolveMediaUrl(selected.image_url)}
               alt={selected.alt || ''}
               sx={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain' }}
             />

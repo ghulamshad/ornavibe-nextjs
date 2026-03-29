@@ -4,7 +4,36 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { fetchSiteContent, type SiteContent } from '@/lib/api/site.service';
 
 const defaultContent: SiteContent = {
-  store: { currency: 'PKR', currency_symbol: 'Rs.', payment_gateway_stripe_enabled: true, payment_gateway_bank_deposit_enabled: true },
+  store: {
+    currency: 'PKR',
+    currency_symbol: 'Rs.',
+    payment_gateway_stripe_enabled: true,
+    payment_gateway_bank_deposit_enabled: true,
+    logo_url: '',
+  },
+  theme: {
+    primary: '',
+    secondary: '',
+    background_default: '',
+    paper: '',
+  },
+  topbar: {
+    enabled: true,
+    background: '#444444',
+    text_color: '#ffffff',
+    center_text: 'Gifts That Make Moments Unforgettable!',
+    center_text_color: '#fff3e3',
+    center_link: '',
+    phone: '+92 300 1233953',
+    phone_color: '#fff3e3',
+    social_links: [
+      { label: 'Facebook', href: 'https://www.facebook.com/beezleonline' },
+      { label: 'Pinterest', href: 'https://www.pinterest.co.uk/beezlestore/' },
+      { label: 'Instagram', href: 'https://www.instagram.com/beezle.store' },
+      { label: 'TikTok', href: 'https://www.tiktok.com/@beezle.store' },
+      { label: 'YouTube', href: 'https://www.youtube.com/@BeezleStore65' },
+    ],
+  },
   hero: {
     title: 'Curated Gift Baskets for Every Occasion',
     subtitle:
@@ -41,6 +70,7 @@ const defaultContent: SiteContent = {
       image_url: '',
     },
   ],
+  hero_slider_variant: 'overlay',
   small_banners: [
     { eyebrow: 'Gift Box', title: 'Awesome Gifts Box Collections', cta_text: 'Shop Now', cta_href: '/products', image_url: '' },
     { eyebrow: 'Occasion Gift', title: 'Best Occasion Gifts Collections', cta_text: 'Discover Now', cta_href: '/categories', image_url: '' },
@@ -51,6 +81,11 @@ const defaultContent: SiteContent = {
   testimonials: [
     { name: 'Sylvia H Green', role: 'Customer', quote: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.', avatar_url: '', rating: 5 },
   ],
+  testimonials_section: {
+    title: 'Testimonials',
+    explore_more_href: '/testimonials',
+    explore_more_label: 'Explore More',
+  },
   newsletter: { title: 'Get 20% Off Discount Coupon', subtitle: 'By Subscribe Our Newsletter', button_text: 'Subscribe' },
   contact: { title: 'Contact', body: 'Reach out to us.', email: '', phone: '' },
   faqs: [],
@@ -65,6 +100,8 @@ const defaultContent: SiteContent = {
     brand: 'Ornavibe',
     company: 'Rason Business',
     tagline: 'Curated gift baskets for every occasion.',
+    background: '#212121',
+    text_color: '#f5f5f5',
   },
   featured: {
     title: 'Featured Gift Baskets',
@@ -87,6 +124,17 @@ const defaultContent: SiteContent = {
     subtitle: 'Stories, tips, and updates from our team.',
     meta_title: 'Blog',
     meta_description: 'Read our latest articles, gift ideas, and company updates.',
+  },
+  sticky_contact: {
+    enabled: false,
+    placement: 'middle_right',
+    edge_offset: 16,
+    vertical_offset: 0,
+    custom_top: null,
+    custom_right: null,
+    custom_bottom: null,
+    custom_left: null,
+    items: [],
   },
 };
 

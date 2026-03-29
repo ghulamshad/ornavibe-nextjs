@@ -14,11 +14,14 @@ import {
   Button,
   Chip,
   Link as MuiLink,
+  useTheme,
 } from '@mui/material';
+import { pageHeroBg, onHeroPaper, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import { Home, NavigateNext, InfoOutlined, VerifiedOutlined, LocalShippingOutlined, SupportAgentOutlined, ArrowForward } from '@mui/icons-material';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 
 export default function AboutPage() {
+  const theme = useTheme();
   const content = useSiteContent();
   const about = (content?.about ?? { title: 'About', body: '', bullet_list: [] as string[] }) as {
     title?: string;
@@ -64,8 +67,8 @@ export default function AboutPage() {
       <Paper
         elevation={0}
         sx={{
-          bgcolor: 'grey.900',
-          color: 'grey.100',
+          bgcolor: pageHeroBg(theme),
+          color: onHeroPaper(theme),
           py: { xs: 4, md: 6 },
           mb: 4,
           borderRadius: 0,
@@ -78,23 +81,23 @@ export default function AboutPage() {
               href="/"
               color="inherit"
               underline="hover"
-              sx={{ display: 'flex', alignItems: 'center', color: 'grey.400' }}
+              sx={{ display: 'flex', alignItems: 'center', color: onHeroPaper(theme, 0.55) }}
             >
               <Home fontSize="small" sx={{ mr: 0.5 }} /> Home
             </MuiLink>
-            <NavigateNext fontSize="small" sx={{ color: 'grey.500' }} />
-            <Typography variant="body2" color="grey.300">
+            <NavigateNext fontSize="small" sx={{ color: onHeroPaper(theme, 0.45) }} />
+            <Typography variant="body2" sx={{ color: onHeroPaper(theme, 0.65) }}>
               About
             </Typography>
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-            <InfoOutlined sx={{ color: 'grey.200' }} />
-            <Typography component="h1" variant="h3" fontWeight={700} sx={{ color: 'grey.50' }}>
+            <InfoOutlined sx={{ color: onHeroPaper(theme, 0.75) }} />
+            <Typography component="h1" variant="h3" fontWeight={700} sx={{ color: onHeroPaper(theme) }}>
               {about.title || <Skeleton width={220} />}
             </Typography>
           </Stack>
-          <Typography variant="body1" sx={{ color: 'grey.400', maxWidth: 680 }}>
+          <Typography variant="body1" sx={{ color: onHeroPaper(theme, 0.72), maxWidth: 680 }}>
             Ornavibe by Rason Business — curated gifts designed to feel personal, premium, and effortless to send.
           </Typography>
         </Container>
@@ -183,7 +186,7 @@ export default function AboutPage() {
                   p: { xs: 2, md: 3 },
                   borderRadius: 2,
                   border: (t) => `1px solid ${t.palette.divider}`,
-                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.900' : 'grey.50'),
+                  bgcolor: surfaceSoft(theme),
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={800} gutterBottom>

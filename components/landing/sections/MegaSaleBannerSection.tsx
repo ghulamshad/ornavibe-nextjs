@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Typography, Button } from '@mui/material';
+import { Box, Container, Typography, Button, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import Link from 'next/link';
+import { promoStripeGradient, softDropShadow } from '@/lib/theme/storefrontSurfaces';
 
 interface PromoBannerContent {
   eyebrow: string;
@@ -13,6 +15,7 @@ interface PromoBannerContent {
 }
 
 export default function MegaSaleBannerSection({ banner }: { banner: PromoBannerContent }) {
+  const theme = useTheme();
   return (
     <Box
       sx={{
@@ -31,9 +34,8 @@ export default function MegaSaleBannerSection({ banner }: { banner: PromoBannerC
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 3,
-            background:
-              'linear-gradient(120deg, #ffb2c4, #ff4f72)',
-            color: '#ffffff',
+            background: promoStripeGradient(theme),
+            color: 'common.white',
           }}
           data-aos="fade-up"
         >
@@ -65,16 +67,16 @@ export default function MegaSaleBannerSection({ banner }: { banner: PromoBannerC
             variant="contained"
             size="large"
             sx={{
-              bgcolor: '#ffffff',
-              color: '#ff4f72',
+              bgcolor: 'background.paper',
+              color: 'primary.main',
               borderRadius: 999,
               px: 4,
               py: 1.4,
               textTransform: 'none',
               fontWeight: 700,
-              boxShadow: '0 18px 40px rgba(0,0,0,0.15)',
+              boxShadow: softDropShadow(theme),
               '&:hover': {
-                bgcolor: '#ffe7f0',
+                bgcolor: alpha(theme.palette.primary.main, 0.14),
               },
             }}
             >

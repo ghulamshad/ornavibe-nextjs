@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Box,
+  Button,
   Typography,
   Paper,
   Table,
@@ -12,6 +13,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Checkbox,
   CircularProgress,
   Alert,
   Chip,
@@ -31,6 +33,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchListRequest } from '@/redux/slices/admin/adminOrders.slice';
 import { useToast } from '@/components/common/Toast';
+import { bulkUpdateOrderStatus } from '@/lib/api/admin.service';
+import { extractErrorMessage } from '@/lib/utils/errorHandler';
 import type { Order, OrderPayment } from '@/types/order';
 
 const STATUS_OPTIONS = [
@@ -64,6 +68,10 @@ export default function AdminOrdersPage() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuOrder, setMenuOrder] = useState<Order | null>(null);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<string>('');
+
   useEffect(() => {
     dispatch(
       fetchListRequest({
@@ -74,6 +82,12 @@ export default function AdminOrdersPage() {
       })
     );
   }, [dispatch, statusFilter, userIdFromUrl, page, rowsPerPage]);
+
+  useEffect(() => {
+    // Keep bulk selection aligned with the currently displayed list.
+    setSelectedIds(new Set());
+    setBulkStatus('');
+  }, [statusFilter, userIdFromUrl, page, rowsPerPage]);
 
   const formatDate = (d: string | undefined) =>
     d ? new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '—';
@@ -95,6 +109,58 @@ export default function AdminOrdersPage() {
         return 'info';
       default:
         return 'default';
+    }
+  };
+
+  const pageRowIds = list.map((o) => String(o.id));
+  const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageRowIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pageRowIds.forEach((id) => next.delete(id));
+      else pageRowIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleRowSelected = (id: number | string) => {
+    const key = String(id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const runBulkSetStatus = async () => {
+    if (selectedIds.size === 0) return;
+    if (!bulkStatus) {
+      toast.showError('Choose a status to apply.');
+      return;
+    }
+
+    setBulkWorking(true);
+    try {
+      const ids = [...selectedIds].map((id) => Number(id));
+      const { updated } = await bulkUpdateOrderStatus({ ids, status: bulkStatus });
+      toast.showSuccess(`Updated ${updated} order(s).`);
+      setSelectedIds(new Set());
+      setBulkStatus('');
+      dispatch(
+        fetchListRequest({
+          status: statusFilter || undefined,
+          user_id: userIdFromUrl ?? undefined,
+          page: page + 1,
+          per_page: rowsPerPage,
+        })
+      );
+    } catch (err) {
+      toast.showError(extractErrorMessage(err as object).message);
+    } finally {
+      setBulkWorking(false);
     }
   };
 
@@ -162,6 +228,51 @@ export default function AdminOrdersPage() {
           {error}
         </Alert>
       )}
+      {selectedIds.size > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 2,
+            p: 1.5,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2" fontWeight={700}>
+            {selectedIds.size} selected
+          </Typography>
+          <TextField
+            size="small"
+            select
+            label="Set status"
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            sx={{ minWidth: 170 }}
+          >
+            <MenuItem value="">Choose…</MenuItem>
+            {STATUS_OPTIONS.filter((o) => o.value).map((o) => (
+              <MenuItem key={o.value} value={o.value}>
+                {o.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button variant="contained" disabled={bulkWorking} onClick={() => void runBulkSetStatus()}>
+            Apply
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={bulkWorking}
+            onClick={() => {
+              setSelectedIds(new Set());
+              setBulkStatus('');
+            }}
+          >
+            Clear selection
+          </Button>
+        </Paper>
+      )}
       {loading && list.length === 0 ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
           <CircularProgress />
@@ -172,6 +283,15 @@ export default function AdminOrdersPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={somePageSelected && !allPageSelected}
+                      checked={allPageSelected}
+                      onChange={() => toggleSelectAllOnPage()}
+                      disabled={bulkWorking || list.length === 0}
+                      inputProps={{ 'aria-label': 'Select all orders' }}
+                    />
+                  </TableCell>
                   <TableCell>Order</TableCell>
                   <TableCell>Customer</TableCell>
                   <TableCell>Status</TableCell>
@@ -184,13 +304,21 @@ export default function AdminOrdersPage() {
               <TableBody>
                 {list.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                       No orders yet. Orders will appear here when customers place orders.
                     </TableCell>
                   </TableRow>
                 ) : (
                   list.map((order: Order) => (
-                    <TableRow key={String(order.id)} hover>
+                    <TableRow key={String(order.id)} hover selected={selectedIds.has(String(order.id))}>
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(String(order.id))}
+                          onChange={() => toggleRowSelected(order.id)}
+                          disabled={bulkWorking}
+                          inputProps={{ 'aria-label': `Select order ${order.id}` }}
+                        />
+                      </TableCell>
                       <TableCell>
                         <MuiLink component={Link} href={`/admin/orders/${order.id}`} sx={{ fontWeight: 600 }}>
                           #{order.id}
