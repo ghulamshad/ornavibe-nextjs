@@ -34,6 +34,7 @@ import {
   Store as StoreIcon,
   MenuBook as MenusIcon,
   ContactPhone as StickyContactIcon,
+  LocalShipping as ShippingIcon,
 } from '@mui/icons-material';
 
 export const drawerWidth = 280;
@@ -51,6 +52,7 @@ const ORNAVIBE_NAV_ITEMS: NavItem[] = [
   { title: 'Categories', path: '/admin/categories', icon: <CategoryIcon /> },
   { title: 'Menus', path: '/admin/menus', icon: <MenusIcon /> },
   { title: 'Orders', path: '/admin/orders', icon: <OrdersIcon /> },
+  { title: 'Shipping', path: '/admin/shipping', icon: <ShippingIcon /> },
   { title: 'Payments', path: '/admin/payments', icon: <PaymentIcon /> },
   { title: 'Inventory', path: '/admin/inventory', icon: <InventoryAlertIcon /> },
   { title: 'Customers', path: '/admin/customers', icon: <CustomersIcon /> },

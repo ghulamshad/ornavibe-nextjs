@@ -46,7 +46,10 @@ export interface Order {
   subtotal: string | number;
   discount_amount?: string | number;
   shipping_amount?: string | number;
+  cod_fee?: string | number;
   total: string | number;
+  shipping_method?: string | null;
+  delivery_carrier?: string | null;
   currency?: string;
   gift_message?: string | null;
   shipping_address?: ShippingAddress;
@@ -73,4 +76,5 @@ export interface CreateOrderPayload {
   shipping_address: ShippingAddress;
   gift_message?: string;
   payment_gateway: string;
+  shipping_method?: string;
 }

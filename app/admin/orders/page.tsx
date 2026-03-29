@@ -47,13 +47,29 @@ const STATUS_OPTIONS = [
   { value: 'refunded', label: 'Refunded' },
 ];
 
+function gatewayLabel(gateway: string): string {
+  if (gateway === 'bank_deposit') return 'Bank deposit';
+  if (gateway === 'cod') return 'COD';
+  if (gateway === 'stripe') return 'Stripe';
+  return gateway;
+}
+
 function paymentRefSummary(payments: OrderPayment[] | undefined): string {
   if (!payments?.length) return '—';
   const p = payments[0];
-  const gatewayLabel = p.gateway === 'bank_deposit' ? 'Bank deposit' : p.gateway;
-  if (p.proof_url) return `${gatewayLabel} · Slip`;
-  if (p.external_id) return `${gatewayLabel} · ${String(p.external_id).slice(0, 12)}…`;
-  return `${gatewayLabel} · ${p.status}`;
+  const label = gatewayLabel(p.gateway);
+  if (p.proof_url) return `${label} · Slip`;
+  if (p.external_id) return `${label} · ${String(p.external_id).slice(0, 12)}…`;
+  return `${label} · ${p.status}`;
+}
+
+function deliverySummary(order: Order): string {
+  const method = order.shipping_method?.trim();
+  const carrier = order.delivery_carrier?.trim();
+  if (!method && !carrier) return '—';
+  const c = carrier ? carrier.replace(/_/g, ' ').toUpperCase() : '';
+  if (method && c) return `${method} · ${c}`;
+  return method || c;
 }
 
 export default function AdminOrdersPage() {
@@ -92,10 +108,18 @@ export default function AdminOrdersPage() {
   const formatDate = (d: string | undefined) =>
     d ? new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
-  const formatCurrency = (v: string | number | undefined) =>
-    v != null
-      ? new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' }).format(Number(v))
-      : '—';
+  const formatCurrency = (v: string | number | undefined, currencyCode?: string) => {
+    if (v == null) return '—';
+    const code =
+      currencyCode && /^[A-Z]{3}$/i.test(String(currencyCode))
+        ? String(currencyCode).toUpperCase()
+        : 'PKR';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(Number(v));
+    } catch {
+      return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' }).format(Number(v));
+    }
+  };
 
   const getStatusColor = (s: string) => {
     switch (s) {
@@ -296,6 +320,7 @@ export default function AdminOrdersPage() {
                   <TableCell>Customer</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Payment</TableCell>
+                  <TableCell>Delivery</TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell align="right" width={56} />
@@ -304,7 +329,7 @@ export default function AdminOrdersPage() {
               <TableBody>
                 {list.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
                       No orders yet. Orders will appear here when customers place orders.
                     </TableCell>
                   </TableRow>
@@ -336,8 +361,18 @@ export default function AdminOrdersPage() {
                         <Typography variant="body2" color="text.secondary">
                           {paymentRefSummary(order.payments)}
                         </Typography>
+                        {Number(order.cod_fee) > 0 && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            COD fee {formatCurrency(order.cod_fee, order.currency)}
+                          </Typography>
+                        )}
                       </TableCell>
-                      <TableCell align="right">{formatCurrency(order.total)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {deliverySummary(order)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">{formatCurrency(order.total, order.currency)}</TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell align="right" padding="none">
                         <Tooltip title="Actions">

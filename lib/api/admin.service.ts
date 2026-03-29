@@ -13,6 +13,8 @@ import type {
   AdminStickyContactItem,
   AdminStickyContactResponse,
   Page,
+  AdminShippingZone,
+  AdminShippingMethod,
 } from '@/types/admin';
 import type {
   CmsPageListItem,
@@ -800,4 +802,82 @@ export async function uploadCmsMedia(payload: {
 
 export async function deleteCmsMedia(id: number): Promise<void> {
   await api.delete(`${CMS_PREFIX}/media/${id}`);
+}
+
+// ——— Shipping zones & methods (admin) ———
+
+export async function fetchAdminShippingZones(): Promise<AdminShippingZone[]> {
+  const response = await api.get<AdminShippingZone[]>(`${PREFIX}/shipping/zones`);
+  return response.data;
+}
+
+export async function createAdminShippingZone(payload: {
+  name: string;
+  is_active?: boolean;
+  priority?: number;
+  regions: Array<{ country_code: string; state_code?: string | null; postal_prefix?: string | null }>;
+}): Promise<AdminShippingZone> {
+  const response = await api.post<AdminShippingZone>(`${PREFIX}/shipping/zones`, payload);
+  return response.data;
+}
+
+export async function updateAdminShippingZone(
+  id: number,
+  payload: Partial<{
+    name: string;
+    is_active: boolean;
+    priority: number;
+    regions: Array<{ country_code: string; state_code?: string | null; postal_prefix?: string | null }>;
+  }>
+): Promise<AdminShippingZone> {
+  const response = await api.put<AdminShippingZone>(`${PREFIX}/shipping/zones/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteAdminShippingZone(id: number): Promise<void> {
+  await api.delete(`${PREFIX}/shipping/zones/${id}`);
+}
+
+export async function fetchAdminShippingMethods(): Promise<AdminShippingMethod[]> {
+  const response = await api.get<AdminShippingMethod[]>(`${PREFIX}/shipping/methods`);
+  return response.data;
+}
+
+export async function createAdminShippingMethod(payload: {
+  code: string;
+  label: string;
+  carrier?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  fallback_rate?: number | null;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  rates?: Array<{ shipping_zone_id: number; rate: number }>;
+}): Promise<AdminShippingMethod> {
+  const response = await api.post<AdminShippingMethod>(`${PREFIX}/shipping/methods`, payload);
+  return response.data;
+}
+
+export async function updateAdminShippingMethod(
+  id: number,
+  payload: Partial<{
+    code: string;
+    label: string;
+    carrier: string | null;
+    description: string | null;
+    is_active: boolean;
+    sort_order: number;
+    fallback_rate: number | null;
+    estimated_days_min: number | null;
+    estimated_days_max: number | null;
+    rates: Array<{ shipping_zone_id: number; rate: number }>;
+  }>
+): Promise<AdminShippingMethod> {
+  const response = await api.put<AdminShippingMethod>(`${PREFIX}/shipping/methods/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteAdminShippingMethod(id: number): Promise<void> {
+  await api.delete(`${PREFIX}/shipping/methods/${id}`);
 }

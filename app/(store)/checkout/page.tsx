@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -12,6 +12,11 @@ import {
   TextField,
   Grid,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  type SelectChangeEvent,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -20,6 +25,8 @@ import { placeOrderRequest } from '@/redux/slices/checkout.slice';
 import type { CreateOrderPayload, ShippingAddress } from '@/types/order';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { formatCurrency } from '@/lib/utils/currency';
+import { previewCheckout, type CheckoutPreview } from '@/lib/api/orders.service';
+import { extractErrorMessage } from '@/lib/utils/errorHandler';
 
 const initialAddress: ShippingAddress = {
   line1: '',
@@ -27,7 +34,16 @@ const initialAddress: ShippingAddress = {
   city: '',
   state: '',
   postal_code: '',
-  country: 'US',
+  country: 'PK',
+};
+
+type PaymentGateway = 'stripe' | 'bank_deposit' | 'cod';
+
+type DisplayShippingOption = {
+  code: string;
+  label: string;
+  rate: number;
+  eta: string | null;
 };
 
 export default function CheckoutPage() {
@@ -35,16 +51,30 @@ export default function CheckoutPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const { cart } = useSelector((state: RootState) => state.cart);
-  const { placing, orderId, error } = useSelector((state: RootState) => state.checkout);
+  const { placing, error } = useSelector((state: RootState) => state.checkout);
   const content = useSiteContent();
   const currencySymbol = content.store?.currency_symbol ?? 'Rs.';
 
   const [address, setAddress] = useState<ShippingAddress>(initialAddress);
   const [giftMessage, setGiftMessage] = useState('');
+
+  const shippingOptionsFromSite = useMemo(() => {
+    const raw = content.store?.shipping_options;
+    if (raw && raw.length > 0) return raw;
+    return [{ code: 'standard', label: 'Standard delivery', rate: 0, carrier: 'store' }];
+  }, [content.store?.shipping_options]);
+
   const stripeEnabled = content.store?.payment_gateway_stripe_enabled ?? true;
   const bankDepositEnabled = content.store?.payment_gateway_bank_deposit_enabled ?? true;
-  const defaultGateway: 'stripe' | 'bank_deposit' = stripeEnabled ? 'stripe' : 'bank_deposit';
-  const [paymentGateway, setPaymentGateway] = useState<'stripe' | 'bank_deposit'>(defaultGateway);
+  const codEnabled = content.store?.payment_gateway_cod_enabled === true;
+
+  const [paymentGateway, setPaymentGateway] = useState<PaymentGateway>('stripe');
+
+  const [preview, setPreview] = useState<CheckoutPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [shippingMethod, setShippingMethod] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (!isAuthenticated || !user)) {
@@ -53,9 +83,88 @@ export default function CheckoutPage() {
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {
-    if (!stripeEnabled && bankDepositEnabled && paymentGateway === 'stripe') setPaymentGateway('bank_deposit');
-    if (stripeEnabled && !bankDepositEnabled && paymentGateway === 'bank_deposit') setPaymentGateway('stripe');
-  }, [stripeEnabled, bankDepositEnabled, paymentGateway]);
+    const ok =
+      (paymentGateway === 'stripe' && stripeEnabled) ||
+      (paymentGateway === 'bank_deposit' && bankDepositEnabled) ||
+      (paymentGateway === 'cod' && codEnabled);
+    if (ok) return;
+    if (stripeEnabled) setPaymentGateway('stripe');
+    else if (bankDepositEnabled) setPaymentGateway('bank_deposit');
+    else if (codEnabled) setPaymentGateway('cod');
+  }, [stripeEnabled, bankDepositEnabled, codEnabled, paymentGateway]);
+
+  const refreshPreview = useCallback(async () => {
+    if (!cart?.items?.length || !isAuthenticated) {
+      setPreview(null);
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const p = await previewCheckout({
+        payment_gateway: paymentGateway,
+        shipping_method: shippingMethod || undefined,
+        shipping_address: {
+          line1: address.line1,
+          line2: address.line2,
+          city: address.city,
+          state: address.state,
+          postal_code: address.postal_code,
+          country: address.country,
+        },
+      });
+      setPreview(p);
+    } catch (err) {
+      setPreviewError(extractErrorMessage(err as object).message);
+      setPreview(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [
+    cart?.items?.length,
+    isAuthenticated,
+    paymentGateway,
+    shippingMethod,
+    address.line1,
+    address.line2,
+    address.city,
+    address.state,
+    address.postal_code,
+    address.country,
+  ]);
+
+  useEffect(() => {
+    refreshPreview();
+  }, [refreshPreview]);
+
+  const displayOptions: DisplayShippingOption[] = useMemo(() => {
+    const quoted = preview?.shipping_quote?.methods;
+    if (quoted && quoted.length > 0) {
+      return quoted.map((m) => ({
+        code: m.code,
+        label: m.label,
+        rate: m.rate,
+        eta:
+          m.estimated_days_min != null && m.estimated_days_max != null
+            ? `${m.estimated_days_min}–${m.estimated_days_max} days`
+            : null,
+      }));
+    }
+    return shippingOptionsFromSite.map((o) => ({
+      code: o.code,
+      label: o.label,
+      rate: o.rate,
+      eta: null,
+    }));
+  }, [preview?.shipping_quote?.methods, shippingOptionsFromSite]);
+
+  useEffect(() => {
+    if (!displayOptions.length) return;
+    setShippingMethod((prev) => {
+      if (prev && displayOptions.some((o) => o.code === prev)) return prev;
+      return displayOptions[0].code;
+    });
+  }, [displayOptions]);
 
   const isEmpty = !cart?.items?.length;
 
@@ -64,6 +173,7 @@ export default function CheckoutPage() {
       shipping_address: address,
       gift_message: giftMessage || undefined,
       payment_gateway: paymentGateway,
+      shipping_method: shippingMethod || undefined,
     };
     dispatch(placeOrderRequest(payload));
   };
@@ -73,6 +183,13 @@ export default function CheckoutPage() {
     address.city.trim() &&
     address.postal_code.trim() &&
     address.country.trim();
+
+  const freeMin = content.store?.shipping_free_min_subtotal ?? 0;
+  const cartSubtotal = typeof cart?.subtotal === 'number' ? cart.subtotal : Number(cart?.subtotal ?? 0);
+
+  const onShippingChange = (e: SelectChangeEvent<string>) => {
+    setShippingMethod(e.target.value);
+  };
 
   return (
     <Box sx={{ py: 4 }}>
@@ -108,8 +225,17 @@ export default function CheckoutPage() {
                 {error}
               </Alert>
             )}
+            {previewError && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {previewError}
+              </Alert>
+            )}
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Shipping address
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+              Use a 2-letter ISO country code (e.g. PK, US, GB). Delivery charges are calculated from your country,
+              state, and postal code using the zones configured in Admin → Shipping.
             </Typography>
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid size={12}>
@@ -144,6 +270,7 @@ export default function CheckoutPage() {
                   label="State / Province"
                   value={address.state}
                   onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))}
+                  helperText="Used for zone rules when set in Admin → Shipping."
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -153,6 +280,7 @@ export default function CheckoutPage() {
                   required
                   value={address.postal_code}
                   onChange={(e) => setAddress((a) => ({ ...a, postal_code: e.target.value }))}
+                  helperText="Matched against postal prefixes in shipping zones."
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -162,9 +290,44 @@ export default function CheckoutPage() {
                   required
                   value={address.country}
                   onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))}
+                  helperText="Use ISO 3166-1 alpha-2 (e.g. PK, US) so automated zones match."
                 />
               </Grid>
             </Grid>
+
+            {preview?.shipping_quote?.zone?.name && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Matched shipping region: <strong>{preview.shipping_quote.zone.name}</strong>
+              </Alert>
+            )}
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel id="checkout-shipping-label">Delivery method</InputLabel>
+              <Select
+                labelId="checkout-shipping-label"
+                label="Delivery method"
+                value={shippingMethod}
+                onChange={onShippingChange}
+                disabled={displayOptions.length === 0 || previewLoading}
+              >
+                {displayOptions.map((opt) => (
+                  <MenuItem key={opt.code} value={opt.code}>
+                    {opt.label}
+                    {opt.rate > 0
+                      ? ` — ${formatCurrency(opt.rate, currencySymbol)}`
+                      : ` — ${formatCurrency(0, currencySymbol)}`}
+                    {opt.eta ? ` · ${opt.eta}` : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {freeMin > 0 && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 3 }}>
+                Subtotals of {formatCurrency(freeMin, currencySymbol)} or more ship free (shipping line shows{' '}
+                {formatCurrency(0, currencySymbol)} when the threshold is met).
+              </Typography>
+            )}
+
             <TextField
               fullWidth
               label="Gift message (optional)"
@@ -178,7 +341,7 @@ export default function CheckoutPage() {
               Payment method
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
-              {(content.store?.payment_gateway_stripe_enabled ?? true) && (
+              {stripeEnabled && (
                 <Button
                   variant={paymentGateway === 'stripe' ? 'contained' : 'outlined'}
                   onClick={() => setPaymentGateway('stripe')}
@@ -187,7 +350,7 @@ export default function CheckoutPage() {
                   Pay online (Stripe)
                 </Button>
               )}
-              {(content.store?.payment_gateway_bank_deposit_enabled ?? true) && (
+              {bankDepositEnabled && (
                 <Button
                   variant={paymentGateway === 'bank_deposit' ? 'contained' : 'outlined'}
                   onClick={() => setPaymentGateway('bank_deposit')}
@@ -196,17 +359,79 @@ export default function CheckoutPage() {
                   Bank deposit
                 </Button>
               )}
+              {codEnabled && (
+                <Button
+                  variant={paymentGateway === 'cod' ? 'contained' : 'outlined'}
+                  onClick={() => setPaymentGateway('cod')}
+                  sx={{ textTransform: 'none', flex: 1 }}
+                >
+                  Cash on delivery (COD)
+                </Button>
+              )}
             </Box>
             {paymentGateway === 'bank_deposit' && (
               <Alert severity="info" sx={{ mb: 3 }}>
-                After placing your order, you&apos;ll receive bank account details. Please upload your
-                deposit slip on the order detail page so our team can verify and approve your payment.
+                After placing your order, you&apos;ll receive bank account details. Please upload your deposit slip on
+                the order detail page so our team can verify and approve your payment.
               </Alert>
             )}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <Typography variant="h6">
-                Total: {formatCurrency(cart?.total ?? 0, currencySymbol)}
+            {paymentGateway === 'cod' && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                You&apos;ll pay the courier when your order arrives. Any COD handling fee is included in the order total
+                below.
+              </Alert>
+            )}
+
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                bgcolor: 'action.hover',
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Order summary
               </Typography>
+              {previewLoading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">
+                    Updating totals…
+                  </Typography>
+                </Box>
+              )}
+              {!previewLoading && preview && (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    Subtotal: {formatCurrency(preview.subtotal, currencySymbol)}
+                  </Typography>
+                  {preview.discount_amount > 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                      Discount: −{formatCurrency(preview.discount_amount, currencySymbol)}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" color="text.secondary">
+                    Shipping: {formatCurrency(preview.shipping_amount, currencySymbol)}
+                  </Typography>
+                  {preview.cod_fee > 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                      COD fee: {formatCurrency(preview.cod_fee, currencySymbol)}
+                    </Typography>
+                  )}
+                  <Typography variant="h6" sx={{ mt: 1 }}>
+                    Total: {formatCurrency(preview.total, currencySymbol)}
+                  </Typography>
+                </>
+              )}
+              {!previewLoading && !preview && !previewError && (
+                <Typography variant="body2" color="text.secondary">
+                  Cart subtotal: {formatCurrency(cartSubtotal, currencySymbol)}
+                </Typography>
+              )}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button component={Link} href="/cart" variant="outlined" disabled={placing}>
                   Back to cart
@@ -214,7 +439,7 @@ export default function CheckoutPage() {
                 <Button
                   variant="contained"
                   onClick={handlePlaceOrder}
-                  disabled={placing || !valid}
+                  disabled={placing || !valid || !!previewError || !preview}
                 >
                   {placing ? <CircularProgress size={24} /> : 'Place order'}
                 </Button>

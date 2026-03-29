@@ -9,6 +9,13 @@ const defaultContent: SiteContent = {
     currency_symbol: 'Rs.',
     payment_gateway_stripe_enabled: true,
     payment_gateway_bank_deposit_enabled: true,
+    payment_gateway_cod_enabled: false,
+    shipping_options: [
+      { code: 'standard', label: 'Standard delivery', rate: 0, carrier: 'store' },
+      { code: 'tcs', label: 'TCS', rate: 250, carrier: 'tcs' },
+      { code: 'leopard', label: 'Leopard Courier', rate: 250, carrier: 'leopard' },
+    ],
+    shipping_free_min_subtotal: 0,
     logo_url: '',
   },
   theme: {

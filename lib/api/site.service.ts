@@ -10,6 +10,10 @@ export interface SiteContent {
     currency_symbol: string;
     payment_gateway_stripe_enabled?: boolean;
     payment_gateway_bank_deposit_enabled?: boolean;
+    payment_gateway_cod_enabled?: boolean;
+    /** Shown at checkout; rates applied server-side */
+    shipping_options?: Array<{ code: string; label: string; rate: number; carrier?: string | null }>;
+    shipping_free_min_subtotal?: number;
     /** Logo image URL or storage path; empty = use default `/assets/logo.jpg` on frontend */
     logo_url?: string;
   };

@@ -102,7 +102,51 @@ export interface AdminSettings {
   /** Empty string = hide “Explore more” on storefront */
   site_testimonials_explore_href?: string;
   site_testimonials_explore_label?: string;
+  payment_gateway_stripe_enabled?: string;
+  payment_gateway_bank_deposit_enabled?: string;
+  payment_gateway_cod_enabled?: string;
+  shipping_options_json?: string;
+  shipping_free_min_subtotal?: string;
+  cod_fee?: string;
   [key: string]: string | undefined;
+}
+
+/** Admin → Shipping → zones (geographic matching for rates). */
+export interface AdminShippingZoneRegion {
+  id?: number;
+  country_code: string;
+  state_code?: string | null;
+  postal_prefix?: string | null;
+}
+
+export interface AdminShippingZone {
+  id: number;
+  name: string;
+  is_active: boolean;
+  priority: number;
+  regions: AdminShippingZoneRegion[];
+}
+
+/** Per-zone price for a delivery method. */
+export interface AdminShippingMethodRateRow {
+  id?: number;
+  shipping_zone_id: number;
+  zone_name?: string;
+  rate: number;
+}
+
+export interface AdminShippingMethod {
+  id: number;
+  code: string;
+  label: string;
+  carrier?: string | null;
+  description?: string | null;
+  is_active: boolean;
+  sort_order: number;
+  fallback_rate: number | null;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  rates: AdminShippingMethodRateRow[];
 }
 
 // Landing / hero section management

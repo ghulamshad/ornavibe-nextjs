@@ -87,6 +87,28 @@ const SECTIONS: {
     fields: [
       { key: 'payment_gateway_stripe_enabled', label: 'Stripe (pay online)', select: [{ value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] },
       { key: 'payment_gateway_bank_deposit_enabled', label: 'Bank deposit', select: [{ value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] },
+      { key: 'payment_gateway_cod_enabled', label: 'Cash on delivery (COD)', select: [{ value: '1', label: 'Enabled' }, { value: '0', label: 'Disabled' }] },
+    ],
+  },
+  {
+    tab: 'store',
+    title: 'Shipping & delivery',
+    description:
+      'Primary configuration is in Admin → Shipping (zones + delivery methods with per-zone rates). Address-based quotes use that data. The JSON below is a legacy fallback only when no shipping methods exist in the database.',
+    fields: [
+      {
+        key: 'shipping_options_json',
+        label: 'Legacy shipping methods JSON (fallback)',
+        multiline: true,
+        helperText:
+          'Used only if the Shipping admin has no active methods. Prefer Admin → Shipping for production. Format: [{"code","label","rate","carrier"}].',
+      },
+      {
+        key: 'shipping_free_min_subtotal',
+        label: 'Free shipping from subtotal (0 = never)',
+        helperText: 'When cart subtotal is at or above this amount, delivery charge becomes 0 (still shows selected method). Use 0 to always charge the method rate.',
+      },
+      { key: 'cod_fee', label: 'COD handling fee', helperText: 'Added to order total when customer pays with COD. Use 0 for no extra fee.' },
     ],
   },
   {
@@ -214,7 +236,9 @@ export default function AdminSettingsPage() {
       const next: Record<string, string> = {};
       ALL_FIELDS.forEach((key) => {
         let v = (settings as Record<string, string>)[key] ?? '';
-        if (
+        if (key === 'payment_gateway_cod_enabled') {
+          if (v !== '0' && v !== '1') v = '0';
+        } else if (
           key === 'payment_gateway_stripe_enabled' ||
           key === 'payment_gateway_bank_deposit_enabled' ||
           key === 'site_topbar_enabled'
@@ -291,6 +315,9 @@ export default function AdminSettingsPage() {
         payload[key] = form[key];
       }
     });
+    if (form.shipping_options_json !== undefined) {
+      payload.shipping_options_json = form.shipping_options_json;
+    }
     dispatch(updateRequest(payload));
     toast.showSuccess('Settings saved');
   };
@@ -503,7 +530,7 @@ export default function AdminSettingsPage() {
                                     onChange={(e) => handleChange(f.key, e.target.value)}
                                     margin="normal"
                                     multiline={f.multiline}
-                                    rows={f.multiline ? 3 : undefined}
+                                    rows={f.multiline ? (f.key === 'shipping_options_json' ? 10 : 3) : undefined}
                                     helperText={f.helperText}
                                   />
                                 )}

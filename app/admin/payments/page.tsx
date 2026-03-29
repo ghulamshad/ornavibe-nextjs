@@ -50,9 +50,17 @@ const GATEWAY_OPTIONS = [
   { value: '', label: 'All gateways' },
   { value: 'bank_deposit', label: 'Bank deposit' },
   { value: 'stripe', label: 'Stripe' },
+  { value: 'cod', label: 'Cash on delivery (COD)' },
   { value: 'paypal', label: 'PayPal' },
   { value: 'razorpay', label: 'Razorpay' },
 ];
+
+function paymentGatewayCellLabel(gateway: string): string {
+  if (gateway === 'bank_deposit') return 'Bank deposit';
+  if (gateway === 'cod') return 'COD';
+  if (gateway === 'stripe') return 'Stripe';
+  return gateway;
+}
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -311,9 +319,7 @@ export default function AdminPaymentsPage() {
                           ? `${payment.order.user.name ?? payment.order.user.email}`
                           : '—'}
                       </TableCell>
-                      <TableCell>
-                        {payment.gateway === 'bank_deposit' ? 'Bank deposit' : payment.gateway}
-                      </TableCell>
+                      <TableCell>{paymentGatewayCellLabel(payment.gateway)}</TableCell>
                       <TableCell align="right">{formatCurrency(payment.amount)}</TableCell>
                       <TableCell>
                         <Chip

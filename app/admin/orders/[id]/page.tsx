@@ -38,6 +38,13 @@ const STATUSES: OrderStatus[] = [
   'refunded',
 ];
 
+function paymentGatewayLabel(gateway: string): string {
+  if (gateway === 'bank_deposit') return 'Bank deposit';
+  if (gateway === 'cod') return 'Cash on delivery (COD)';
+  if (gateway === 'stripe') return 'Stripe (online)';
+  return gateway;
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -69,10 +76,19 @@ export default function AdminOrderDetailPage() {
     );
   }
 
-  const formatCurrency = (v: string | number | undefined) =>
-    v != null
-      ? new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' }).format(Number(v))
-      : '—';
+  const currencyCode =
+    detail?.currency && /^[A-Z]{3}$/i.test(String(detail.currency))
+      ? String(detail.currency).toUpperCase()
+      : 'PKR';
+
+  const formatCurrency = (v: string | number | undefined) => {
+    if (v == null) return '—';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(Number(v));
+    } catch {
+      return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' }).format(Number(v));
+    }
+  };
 
   const formatDate = (d: string | undefined) =>
     d ? new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
@@ -189,6 +205,29 @@ export default function AdminOrderDetailPage() {
           <Grid size={{ xs: 12, md: 4 }}>
             <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Fulfillment
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Shipping method
+                  </Typography>
+                  <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    {detail.shipping_method?.trim() || '—'}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Carrier
+                  </Typography>
+                  <Typography variant="body2" sx={{ textAlign: 'right', textTransform: 'uppercase' }}>
+                    {detail.delivery_carrier?.trim() || '—'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Summary
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -206,12 +245,18 @@ export default function AdminOrderDetailPage() {
                     <Typography variant="body2">-{formatCurrency(detail.discount_amount)}</Typography>
                   </Box>
                 )}
-                {detail.shipping_amount != null && Number(detail.shipping_amount) !== 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Shipping
+                  </Typography>
+                  <Typography variant="body2">{formatCurrency(detail.shipping_amount ?? 0)}</Typography>
+                </Box>
+                {(Number(detail.cod_fee) > 0 || detail.payments?.some((p) => p.gateway === 'cod')) && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">
-                      Shipping
+                      COD fee
                     </Typography>
-                    <Typography variant="body2">{formatCurrency(detail.shipping_amount)}</Typography>
+                    <Typography variant="body2">{formatCurrency(detail.cod_fee ?? 0)}</Typography>
                   </Box>
                 )}
                 <Divider sx={{ my: 1 }} />
@@ -219,6 +264,9 @@ export default function AdminOrderDetailPage() {
                   <Typography fontWeight="bold">Total</Typography>
                   <Typography fontWeight="bold">{formatCurrency(detail.total)}</Typography>
                 </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Currency: {currencyCode}
+                </Typography>
               </Box>
             </Paper>
             <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -245,7 +293,7 @@ export default function AdminOrderDetailPage() {
                   <Box key={String(p.id)} sx={{ mb: 2, '&:last-child': { mb: 0 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
                       <Typography variant="body2" fontWeight="600">
-                        {p.gateway === 'bank_deposit' ? 'Bank deposit' : p.gateway}
+                        {paymentGatewayLabel(p.gateway)}
                       </Typography>
                       <Chip label={p.status} size="small" color={p.status === 'completed' ? 'success' : p.status === 'failed' ? 'error' : 'default'} variant="outlined" />
                     </Box>
