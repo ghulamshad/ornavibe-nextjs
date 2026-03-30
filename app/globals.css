@@ -19,8 +19,22 @@
   }
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* react-slick default theme arrows: no filled circle behind prev/next */
+.slick-arrow {
+  background: transparent !important;
+}
+.slick-arrow:hover,
+.slick-arrow:focus {
+  background: transparent !important;
 }

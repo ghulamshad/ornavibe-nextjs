@@ -62,7 +62,11 @@ export default function HeroSliderSection({ slides }: { slides: HeroSlide[] }) {
         position: 'relative',
         minHeight: { xs: 420, md: 560 },
         '& .slick-dots': { bottom: 24 },
-        '& .slick-prev, & .slick-next': { zIndex: 2 },
+        '& .slick-prev, & .slick-next': {
+          zIndex: 2,
+          background: 'transparent !important',
+          '&:hover, &:focus': { background: 'transparent !important' },
+        },
         '& .slick-prev': { left: 16 },
         '& .slick-next': { right: 16 },
       }}

@@ -1,25 +1,21 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, IconButton, useTheme } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import ChatIcon from '@mui/icons-material/Chat';
 import LinkIcon from '@mui/icons-material/Link';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { resolveMediaUrl } from '@/lib/utils/media';
 
-const MOBILE_BOTTOM_NAV = 56;
-
 function placementStyles(
   placement: string,
   edge: number,
   verticalNudge: number,
-  custom: { top?: string | null; right?: string | null; bottom?: string | null; left?: string | null },
-  mobileBottomExtra: number
+  custom: { top?: string | null; right?: string | null; bottom?: string | null; left?: string | null }
 ): React.CSSProperties {
   const e = `${edge}px`;
-  const bottomWithNav = `${edge + mobileBottomExtra}px`;
 
   switch (placement) {
     case 'middle_left':
@@ -29,9 +25,9 @@ function placementStyles(
         transform: `translateY(calc(-50% + ${verticalNudge}px))`,
       };
     case 'bottom_right':
-      return { bottom: bottomWithNav, right: e };
+      return { bottom: e, right: e };
     case 'bottom_left':
-      return { bottom: bottomWithNav, left: e };
+      return { bottom: e, left: e };
     case 'top_right':
       return { top: e, right: e };
     case 'top_left':
@@ -56,7 +52,6 @@ function placementStyles(
 
 export default function StickyWhatsapp() {
   const theme = useTheme();
-  const isXs = useMediaQuery(theme.breakpoints.down('sm'));
   const site = useSiteContent();
   const sc = site.sticky_contact;
   const [mounted, setMounted] = useState(false);
@@ -64,13 +59,6 @@ export default function StickyWhatsapp() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const mobileExtra = useMemo(() => {
-    if (!sc?.enabled || !isXs) return 0;
-    const p = sc.placement || '';
-    if (p.startsWith('bottom')) return MOBILE_BOTTOM_NAV;
-    return 0;
-  }, [sc?.enabled, sc?.placement, isXs]);
 
   if (!sc?.enabled || !sc.items?.length || !mounted) {
     return null;
@@ -85,8 +73,7 @@ export default function StickyWhatsapp() {
       right: sc.custom_right,
       bottom: sc.custom_bottom,
       left: sc.custom_left,
-    },
-    mobileExtra
+    }
   );
 
   const stack = (

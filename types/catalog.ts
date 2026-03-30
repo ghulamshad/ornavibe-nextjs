@@ -38,7 +38,12 @@ export interface Product {
   id: number | string;
   name: string;
   slug: string;
+  /** List/detail HTML or text; main long copy. */
   description?: string;
+  /** Shorter HTML for cards / merchandising (e.g. “gift box includes…”). */
+  short_description?: string;
+  /** Same as `short_description` if your API emits camelCase. */
+  shortDescription?: string;
   price: string | number;
   category_id?: string | number;
   category?: Category;

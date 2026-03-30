@@ -34,8 +34,6 @@ import {
   Close as CloseIcon,
   ExpandMore,
   ExpandLess,
-  HomeOutlined as HomeIcon,
-  GridViewOutlined as ShopIcon,
   Facebook,
   Pinterest,
   Instagram,
@@ -156,7 +154,9 @@ export default function Header() {
   const { topbar, store, footer } = useSiteContent();
   const logoSrc = resolveStoreLogoSrc(store?.logo_url);
   const brandAlt = footer?.brand?.trim() || 'Store';
-  const hasTopbar = topbar?.enabled !== false;
+  const topbarEnabled = topbar?.enabled !== false;
+  /** Promo strip: desktop/tablet only — hidden on mobile for a cleaner header + more vertical space. */
+  const showTopbar = topbarEnabled && !isMobile;
   const socialLinks = Array.isArray(topbar?.social_links) ? topbar!.social_links! : [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -191,7 +191,7 @@ export default function Header() {
   return (
     <>
       <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar }} onMouseLeave={() => setActiveMenu(null)}>
-        {hasTopbar && (
+        {showTopbar && (
           <Box
             sx={{
               minHeight: TOPBAR_HEIGHT,
@@ -302,7 +302,7 @@ export default function Header() {
             borderBottom: '1px solid',
             borderColor: 'divider',
             boxShadow: scrolled ? theme.shadows[3] : 'none',
-            transform: !isMobile && scrolled && hasTopbar ? `translateY(-${TOPBAR_HEIGHT}px)` : 'translateY(0)',
+            transform: !isMobile && scrolled && topbarEnabled ? `translateY(-${TOPBAR_HEIGHT}px)` : 'translateY(0)',
             transition: 'transform 0.22s ease, box-shadow 0.22s ease',
           }}
         >
@@ -421,6 +421,28 @@ export default function Header() {
           </Box>
           <Divider />
           <List disablePadding>
+            <ListItemButton component={Link} href="/" onClick={() => setMobileOpen(false)}>
+              <ListItemText primary="Home" />
+            </ListItemButton>
+            <ListItemButton component={Link} href="/categories" onClick={() => setMobileOpen(false)}>
+              <ListItemText primary="Shop" />
+            </ListItemButton>
+            <ListItemButton
+              component="button"
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(true);
+              }}
+            >
+              <ListItemText primary="Search" />
+            </ListItemButton>
+            <ListItemButton component={Link} href="/auth/login" onClick={() => setMobileOpen(false)}>
+              <ListItemText primary="Account" />
+            </ListItemButton>
+            <ListItemButton component={Link} href="/wishlist" onClick={() => setMobileOpen(false)}>
+              <ListItemText primary="Wishlist" />
+            </ListItemButton>
+            <Divider sx={{ my: 0.5 }} />
             {nav.map((item) => (
               <Box key={item.label}>
                 <ListItemButton
@@ -478,25 +500,12 @@ export default function Header() {
         </Box>
       </Drawer>
 
-      {isMobile && (
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar - 1, borderTop: '1px solid', borderColor: 'divider', borderRadius: 0 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-around', py: 0.6 }}>
-            <IconButton component={Link} href="/" sx={{ flexDirection: 'column' }}><HomeIcon fontSize="small" /><Typography variant="caption">Home</Typography></IconButton>
-            <IconButton component={Link} href="/categories" sx={{ flexDirection: 'column' }}><ShopIcon fontSize="small" /><Typography variant="caption">Shop</Typography></IconButton>
-            <IconButton onClick={() => setSearchOpen(true)} sx={{ flexDirection: 'column' }}><SearchIcon fontSize="small" /><Typography variant="caption">Search</Typography></IconButton>
-            <IconButton component={Link} href="/auth/login" sx={{ flexDirection: 'column' }}><PersonIcon fontSize="small" /><Typography variant="caption">Account</Typography></IconButton>
-            <IconButton component={Link} href="/wishlist" sx={{ flexDirection: 'column' }}><WishlistIcon fontSize="small" /><Typography variant="caption">Wishlist</Typography></IconButton>
-          </Box>
-        </Paper>
-      )}
-
       <Box
         sx={{
           height: {
-            xs: HEADER_HEIGHT + (hasTopbar ? 72 : 0),
-            md: HEADER_HEIGHT + (hasTopbar ? TOPBAR_HEIGHT : 0),
+            xs: HEADER_HEIGHT,
+            md: HEADER_HEIGHT + (topbarEnabled ? TOPBAR_HEIGHT : 0),
           },
-          pb: { xs: '56px', md: 0 },
         }}
       />
     </>

@@ -18,7 +18,7 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
             component="main"
             sx={{
               flex: 1,
-              // NewLandingHeader includes its own spacer (header + mobile bottom bar).
+              // NewLandingHeader includes its own spacer for fixed AppBar (+ topbar when shown).
               pb: { xs: 1, md: 0 },
             }}
           >

@@ -9,8 +9,11 @@ import {
   Button,
   IconButton,
   Rating,
+  Stack,
   useTheme,
+  useMediaQuery,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { paperTranslucent, scrim, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -18,6 +21,9 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import Link from 'next/link';
 import type { Product } from '@/types/catalog';
+import { resolveMediaUrl } from '@/lib/utils/media';
+import { getProductPlainPreview, getProductRichHtmlSource } from '@/lib/utils/productContent';
+import ProductRichDescription from '@/components/ui/ProductRichDescription';
 
 export interface ProductCardProps {
   product: Product;
@@ -55,6 +61,25 @@ export default function ProductCard({
 }: ProductCardProps) {
   const theme = useTheme();
   const [hover, setHover] = useState(false);
+  /** Touch / coarse-pointer devices: no real hover — keep quick actions visible. */
+  const isCoarsePrimary = useMediaQuery('(hover: none)', { noSsr: true, defaultMatches: false });
+  const showHoverActions = isCoarsePrimary || hover;
+  const canFineHover = !isCoarsePrimary;
+  const richHtmlSource = getProductRichHtmlSource(product);
+
+  const primarySrc = imageUrl ? resolveMediaUrl(imageUrl) : '';
+  const secondaryRaw =
+    product.images && product.images.length > 1
+      ? product.images[1]
+      : product.variants?.find((v) => v.image_url)?.image_url;
+  const secondarySrc = secondaryRaw ? resolveMediaUrl(secondaryRaw) : '';
+  const showImageSwap = Boolean(
+    primarySrc && secondarySrc && secondarySrc !== primarySrc && hover && canFineHover
+  );
+  const showDescriptionOverlay = Boolean(richHtmlSource && hover && canFineHover);
+  const hasBottomActions = Boolean((onQuickView || onAddToCart) && showHoverActions);
+  const actionBarReservePx = hasBottomActions ? 44 : 0;
+
   const href = `/products/${product.slug || product.id}`;
   const price =
     typeof product.price === 'number'
@@ -68,8 +93,6 @@ export default function ProductCard({
   const imageBlock = (
     <Box
       className="card-media-wrap"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       sx={{
         position: 'relative',
         aspectRatio: '1',
@@ -86,7 +109,7 @@ export default function ProductCard({
             position: 'absolute',
             top: 8,
             left: 8,
-            zIndex: 2,
+            zIndex: 5,
             px: 1,
             py: 0.25,
             borderRadius: 1,
@@ -118,7 +141,7 @@ export default function ProductCard({
             position: 'absolute',
             top: 8,
             right: 8,
-            zIndex: 2,
+            zIndex: 5,
             bgcolor: paperTranslucent(theme, 0.92),
             '&:hover': { bgcolor: paperTranslucent(theme, 1) },
           }}
@@ -130,20 +153,49 @@ export default function ProductCard({
           )}
         </IconButton>
       )}
-      {imageUrl ? (
+      {primarySrc ? (
         <Box
-          component="img"
-          src={imageUrl}
-          alt={product.name}
           sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
+            position: 'absolute',
+            inset: 0,
             p: 1,
-            transition: 'transform 0.2s',
-            ...(hover && { transform: 'scale(1.03)' }),
+            zIndex: 0,
           }}
-        />
+        >
+          <Box
+            component="img"
+            src={primarySrc}
+            alt={product.name}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              transition: 'opacity 0.35s ease, transform 0.25s ease',
+              opacity: showImageSwap ? 0 : 1,
+              transform: hover && canFineHover ? 'scale(1.03)' : 'scale(1)',
+            }}
+          />
+          {secondarySrc ? (
+            <Box
+              component="img"
+              src={secondarySrc}
+              alt=""
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                transition: 'opacity 0.35s ease, transform 0.25s ease',
+                opacity: showImageSwap ? 1 : 0,
+                transform: hover && canFineHover ? 'scale(1.03)' : 'scale(1)',
+                pointerEvents: 'none',
+              }}
+            />
+          ) : null}
+        </Box>
       ) : (
         <Box
           sx={{
@@ -158,34 +210,85 @@ export default function ProductCard({
           </Typography>
         </Box>
       )}
-      {(onQuickView || onAddToCart) && hover && (
+
+      {showDescriptionOverlay && (
         <Box
+          className="product-short-description"
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: actionBarReservePx,
+            maxHeight: actionBarReservePx ? '50%' : '56%',
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            pointerEvents: 'auto',
+          }}
+        >
+          <ProductRichDescription
+            htmlSource={richHtmlSource}
+            elevation={3}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              borderRadius: '12px 12px 0 0',
+              px: 1.5,
+              py: 1.25,
+              bgcolor: (t) => alpha(t.palette.background.paper, 0.97),
+              border: 1,
+              borderColor: 'divider',
+              borderBottom: 'none',
+            }}
+          />
+        </Box>
+      )}
+
+      {(onQuickView || onAddToCart) && showHoverActions && (
+        <Stack
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          spacing={1}
           sx={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 0.5,
             p: 1,
             bgcolor: scrim(theme, 0.5),
-            zIndex: 1,
+            zIndex: 4,
+            pointerEvents: 'auto',
           }}
         >
           {onQuickView && (
-            <IconButton
+            <Button
+              type="button"
               size="small"
-              sx={{ bgcolor: 'background.paper', color: 'text.primary' }}
+              variant="contained"
+              color="inherit"
+              startIcon={<VisibilityOutlinedIcon fontSize="small" />}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onQuickView();
               }}
               aria-label="Quick view"
+              sx={{
+                textTransform: 'none',
+                bgcolor: 'background.paper',
+                color: 'text.primary',
+                boxShadow: 1,
+                fontWeight: 600,
+                pr: { xs: 1, sm: 1.5 },
+              }}
             >
-              <VisibilityOutlinedIcon fontSize="small" />
-            </IconButton>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Quick view
+              </Box>
+            </Button>
           )}
           {onAddToCart && (
             <IconButton
@@ -201,7 +304,7 @@ export default function ProductCard({
               <ShoppingBagOutlinedIcon fontSize="small" />
             </IconButton>
           )}
-        </Box>
+        </Stack>
       )}
     </Box>
   );
@@ -238,7 +341,7 @@ export default function ProductCard({
           flex: 1,
         }}
       >
-        {product.description || 'Product'}
+        {getProductPlainPreview(product) || 'Product'}
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h6" color="primary">
@@ -266,6 +369,8 @@ export default function ProductCard({
     <Card
       className="product-card"
       variant="outlined"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       sx={{
         height: '100%',
         borderRadius: 2,

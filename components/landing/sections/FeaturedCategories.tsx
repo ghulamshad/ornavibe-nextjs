@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Box, IconButton, Skeleton, Typography, useTheme } from '@mui/material';
-import { paperTranslucent, neutralSlate } from '@/lib/theme/storefrontSurfaces';
+import { Box, IconButton, Skeleton, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Slider from 'react-slick';
@@ -29,8 +29,12 @@ function sortRootCategories(list: Category[]): Category[] {
   });
 }
 
+const SECTION_TITLE_ID = 'featured-categories-heading';
+
 export default function FeaturedCategories({ title = 'Featured Categories' }: FeaturedCategoriesProps) {
   const theme = useTheme();
+  const showNavArrows = useMediaQuery(theme.breakpoints.up('sm'));
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const dispatch = useDispatch<AppDispatch>();
   const { categories, categoriesLoading } = useSelector((state: RootState) => state.catalog);
   const sliderRef = useRef<Slider | null>(null);
@@ -46,44 +50,91 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
 
   const settings: Settings = useMemo(() => {
     const n = rootCategories.length;
-    const slides = (cap: number) => Math.min(cap, Math.max(1, n));
+    const cap = (max: number) => Math.min(max, Math.max(1, n));
+    const motionMs = reduceMotion ? 220 : 450;
     return {
       centerMode: n > 1,
       centerPadding: '0',
       infinite: n > 1,
-      speed: 1000,
+      speed: motionMs,
+      cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
       rows: 1,
-      slidesToShow: slides(7),
+      slidesToShow: cap(7),
       slidesToScroll: 1,
-      autoplay: n > 3,
-      autoplaySpeed: 4000,
-      arrows: false,
+      swipe: true,
+      swipeToSlide: true,
+      touchThreshold: 5,
+      touchMove: true,
+      autoplay: !reduceMotion && n > 3,
+      autoplaySpeed: 4500,
       pauseOnHover: true,
+      pauseOnFocus: true,
+      accessibility: true,
+      arrows: false,
       responsive: [
-        { breakpoint: 1500, settings: { slidesToShow: slides(7), centerMode: n > 1 } },
-        { breakpoint: 1400, settings: { slidesToShow: slides(7), centerMode: n > 1 } },
-        { breakpoint: 1200, settings: { slidesToShow: slides(5), centerMode: n > 1 } },
-        { breakpoint: 900, settings: { slidesToShow: slides(4), centerMode: n > 1 } },
+        { breakpoint: 1536, settings: { slidesToShow: cap(6), centerMode: n > 1, slidesToScroll: 1 } },
+        { breakpoint: 1200, settings: { slidesToShow: cap(5), centerMode: n > 1, slidesToScroll: 1 } },
+        { breakpoint: 900, settings: { slidesToShow: cap(4), centerMode: false, slidesToScroll: 1 } },
+        { breakpoint: 600, settings: { slidesToShow: cap(3), centerMode: false, slidesToScroll: 1 } },
         {
           breakpoint: 480,
-          settings: { slidesToShow: slides(3), centerMode: n > 1, arrows: false },
+          settings: {
+            slidesToShow: cap(2),
+            centerMode: false,
+            slidesToScroll: 1,
+            infinite: n > 2,
+          },
         },
       ],
     };
-  }, [rootCategories.length]);
+  }, [rootCategories, reduceMotion]);
 
   if (categoriesLoading && !rootCategories.length) {
     return (
-      <Box component="section" className="cnt-lg" sx={{ py: { xs: 4, md: 6 }, width: '100%' }}>
-        <Box className="home_cats" data-section="FeaturedCollection" sx={{ maxWidth: 'xl', mx: 'auto', px: { xs: 2, md: 3 } }}>
-          <Box className="section_title" sx={{ mb: 3 }}>
-            <Typography variant="h4" component="h2" fontWeight={700}>
+      <Box
+        component="section"
+        className="cnt-lg"
+        aria-busy="true"
+        aria-labelledby={SECTION_TITLE_ID}
+        sx={{
+          py: { xs: 3, sm: 4, md: 6 },
+          width: '100%',
+          pl: { xs: 'max(12px, env(safe-area-inset-left, 0px))', sm: 2, md: 3 },
+          pr: { xs: 'max(12px, env(safe-area-inset-right, 0px))', sm: 2, md: 3 },
+        }}
+      >
+        <Box className="home_cats" data-section="FeaturedCollection" sx={{ maxWidth: 'xl', mx: 'auto' }}>
+          <Box className="section_title" sx={{ mb: { xs: 2, md: 3 }, textAlign: { xs: 'center', md: 'left' } }}>
+            <Typography id={SECTION_TITLE_ID} variant="h4" component="h2" fontWeight={700} sx={{ fontSize: { xs: '1.35rem', sm: '1.5rem', md: '2.125rem' } }}>
               {title}
             </Typography>
           </Box>
-          <Box display="flex" gap={2} sx={{ overflow: 'hidden' }}>
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} variant="rounded" width={154} height={154} sx={{ flexShrink: 0, borderRadius: 2 }} />
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1.5,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              pb: 0.5,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'thin',
+              mx: { xs: -0.5, sm: 0 },
+              px: { xs: 0.5, sm: 0 },
+            }}
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                sx={{
+                  flex: '0 0 auto',
+                  width: { xs: 'min(42vw, 168px)', sm: 140, md: 154 },
+                  height: { xs: 'min(42vw, 168px)', sm: 140, md: 154 },
+                  borderRadius: 2,
+                  scrollSnapAlign: 'start',
+                }}
+              />
             ))}
           </Box>
         </Box>
@@ -99,22 +150,32 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
     <Box
       component="section"
       className="cnt-lg"
+      aria-labelledby={SECTION_TITLE_ID}
       sx={{
-        py: { xs: 4, md: 6 },
+        py: { xs: 3, sm: 4, md: 6 },
         width: '100%',
-        '& .featured-categories-slick .slick-slide': { px: 0.5 },
-        '& .featured-categories-slick .slick-list': { mx: { xs: 0, sm: 4 } },
+        maxWidth: '100%',
+        pl: { xs: 'max(12px, env(safe-area-inset-left, 0px))', sm: 2, md: 3 },
+        pr: { xs: 'max(12px, env(safe-area-inset-right, 0px))', sm: 2, md: 3 },
+        boxSizing: 'border-box',
+        '& .featured-categories-slick .slick-slide': { px: { xs: 0.5, sm: 0.625, md: 0.5 } },
+        '& .featured-categories-slick .slick-list': {
+          mx: { xs: 0, sm: showNavArrows ? 5 : 0 },
+          overflow: 'hidden',
+        },
         '& .featured-categories-slick .slick-track': { display: 'flex', alignItems: 'stretch' },
         '& .featured-categories-slick .slick-slide > div': { height: '100%' },
       }}
     >
-      <Box
-        className="home_cats"
-        data-section="FeaturedCollection"
-        sx={{ maxWidth: 'xl', mx: 'auto', px: { xs: 2, md: 3 } }}
-      >
+      <Box className="home_cats" data-section="FeaturedCollection" sx={{ maxWidth: 'xl', mx: 'auto' }}>
         <Box className="section_title" sx={{ mb: { xs: 2, md: 3 }, textAlign: { xs: 'center', md: 'left' } }}>
-          <Typography variant="h4" component="h2" fontWeight={700}>
+          <Typography
+            id={SECTION_TITLE_ID}
+            variant="h4"
+            component="h2"
+            fontWeight={700}
+            sx={{ fontSize: { xs: '1.35rem', sm: '1.5rem', md: '2.125rem' }, lineHeight: { xs: 1.35, md: 1.2 } }}
+          >
             {title}
           </Typography>
         </Box>
@@ -134,8 +195,9 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
                   <Box
                     component="img"
                     src={src}
-                    alt={cat.name}
+                    alt=""
                     loading="lazy"
+                    sizes="(max-width: 480px) 45vw, (max-width: 900px) 30vw, 180px"
                     sx={{
                       width: '100%',
                       aspectRatio: '1',
@@ -159,6 +221,7 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
                       color: 'text.secondary',
                       px: 1,
                       textAlign: 'center',
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
                     }}
                   >
                     {cat.name.slice(0, 2).toUpperCase()}
@@ -166,69 +229,99 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
                 );
 
                 return (
-                  <Box key={cat.id} className="item" sx={{ px: 1, outline: 'none' }}>
-                    <Link href={href} style={{ display: 'block', textDecoration: 'none' }}>
+                  <Box key={cat.id} className="item" sx={{ px: { xs: 0.5, sm: 0.75 }, outline: 'none', height: '100%' }}>
+                    <Box
+                      component={Link}
+                      href={href}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        borderRadius: 2,
+                        minWidth: 0,
+                        '&:focus-visible': {
+                          outline: `2px solid ${theme.palette.primary.main}`,
+                          outlineOffset: 3,
+                        },
+                      }}
+                    >
                       {thumb}
                       <Typography
-                        variant="caption"
                         component="span"
                         sx={{
-                          mt: 1,
-                          display: 'block',
+                          mt: { xs: 1, sm: 1.25 },
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
                           textAlign: 'center',
                           color: 'text.primary',
                           fontWeight: 600,
-                          lineHeight: 1.3,
+                          lineHeight: 1.35,
+                          fontSize: { xs: '0.8rem', sm: '0.8125rem', md: '0.875rem' },
+                          minHeight: { xs: '2.7em', sm: 'auto' },
+                          px: 0.25,
+                          wordBreak: 'break-word',
                         }}
                       >
                         {cat.name}
                       </Typography>
-                    </Link>
+                    </Box>
                   </Box>
                 );
               })}
             </Slider>
 
-            <IconButton
-              type="button"
-              aria-label="Previous categories"
-              onClick={() => sliderRef.current?.slickPrev()}
-              className="prev_arrow slick-arrow"
-              sx={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 2,
-                bgcolor: paperTranslucent(theme, 0.92),
-                boxShadow: 2,
-                '&:hover': { bgcolor: paperTranslucent(theme, 0.98) },
-                '@media (max-width: 480px)': { display: 'none' },
-                left: { xs: 0, md: -8 },
-              }}
-              size="large"
-            >
-              <ChevronLeft fontSize="large" />
-            </IconButton>
-            <IconButton
-              type="button"
-              aria-label="Next categories"
-              onClick={() => sliderRef.current?.slickNext()}
-              className="next_arrow slick-arrow"
-              sx={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 2,
-                bgcolor: paperTranslucent(theme, 0.92),
-                boxShadow: 2,
-                '&:hover': { bgcolor: paperTranslucent(theme, 0.98) },
-                '@media (max-width: 480px)': { display: 'none' },
-                right: { xs: 0, md: -8 },
-              }}
-              size="large"
-            >
-              <ChevronRight fontSize="large" />
-            </IconButton>
+            {showNavArrows ? (
+              <>
+                <IconButton
+                  type="button"
+                  aria-label="Previous categories"
+                  onClick={() => sliderRef.current?.slickPrev()}
+                  className="prev_arrow slick-arrow"
+                  sx={{
+                    position: 'absolute',
+                    top: '42%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 2,
+                    color: 'text.primary',
+                    bgcolor: 'transparent',
+                    boxShadow: 'none',
+                    width: { sm: 44, md: 48 },
+                    height: { sm: 44, md: 48 },
+                    '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
+                    left: { sm: -4, md: -8 },
+                  }}
+                  size="large"
+                >
+                  <ChevronLeft fontSize="medium" />
+                </IconButton>
+                <IconButton
+                  type="button"
+                  aria-label="Next categories"
+                  onClick={() => sliderRef.current?.slickNext()}
+                  className="next_arrow slick-arrow"
+                  sx={{
+                    position: 'absolute',
+                    top: '42%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 2,
+                    color: 'text.primary',
+                    bgcolor: 'transparent',
+                    boxShadow: 'none',
+                    width: { sm: 44, md: 48 },
+                    height: { sm: 44, md: 48 },
+                    '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
+                    right: { sm: -4, md: -8 },
+                  }}
+                  size="large"
+                >
+                  <ChevronRight fontSize="medium" />
+                </IconButton>
+              </>
+            ) : null}
           </Box>
         </Box>
       </Box>

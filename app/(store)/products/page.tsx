@@ -32,7 +32,7 @@ import {
   Divider,
   useTheme,
 } from '@mui/material';
-import { paperTranslucent, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
+import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import {
   Home,
   NavigateNext,
@@ -51,6 +51,8 @@ import { fetchWishlistRequest, addWishlistRequest, removeWishlistRequest } from 
 import { fetchProducts, fetchProductByIdOrSlug, fetchCategories } from '@/lib/api/catalog.service';
 import type { Product, Category, PaginatedResponse } from '@/types/catalog';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductRichDescription from '@/components/ui/ProductRichDescription';
+import { getProductRichHtmlSource } from '@/lib/utils/productContent';
 
 const PER_PAGE = 12;
 const PRICE_MIN = 0;
@@ -615,7 +617,15 @@ export default function ProductsPage() {
         </Grid>
 
         {/* Quick view modal */}
-        <Dialog open={!!quickViewProduct || quickViewLoading} onClose={() => setQuickViewProduct(null)} maxWidth="md" fullWidth>
+        <Dialog
+          open={!!quickViewProduct || quickViewLoading}
+          onClose={() => {
+            setQuickViewProduct(null);
+            setQuickViewLoading(false);
+          }}
+          maxWidth="md"
+          fullWidth
+        >
           <DialogTitle>Quick view</DialogTitle>
           <DialogContent>
             {quickViewLoading ? (
@@ -682,7 +692,10 @@ export default function ProductsPage() {
                                   left: 8,
                                   top: '50%',
                                   transform: 'translateY(-50%)',
-                                  bgcolor: paperTranslucent(theme, 0.92),
+                                  color: 'text.primary',
+                                  bgcolor: 'transparent',
+                                  boxShadow: 'none',
+                                  '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
                                 }}
                                 onClick={() =>
                                   setQuickViewImageIndex((idx) => (idx <= 0 ? images.length - 1 : idx - 1))
@@ -697,7 +710,10 @@ export default function ProductsPage() {
                                   right: 8,
                                   top: '50%',
                                   transform: 'translateY(-50%)',
-                                  bgcolor: paperTranslucent(theme, 0.92),
+                                  color: 'text.primary',
+                                  bgcolor: 'transparent',
+                                  boxShadow: 'none',
+                                  '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
                                 }}
                                 onClick={() =>
                                   setQuickViewImageIndex((idx) => (idx >= images.length - 1 ? 0 : idx + 1))
@@ -762,9 +778,13 @@ export default function ProductsPage() {
                           </Typography>
                         </Box>
 
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                          {quickViewProduct.description || ''}
-                        </Typography>
+                        <Box sx={{ mb: 1.5 }}>
+                          <ProductRichDescription
+                            htmlSource={getProductRichHtmlSource(quickViewProduct)}
+                            elevation={0}
+                            sx={{ bgcolor: 'transparent', boxShadow: 'none', py: 0.25 }}
+                          />
+                        </Box>
 
                         {variants.length > 0 && (
                           <Box sx={{ mb: 1.5 }}>

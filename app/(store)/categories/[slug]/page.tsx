@@ -37,6 +37,8 @@ import { fetchWishlistRequest, addWishlistRequest, removeWishlistRequest } from 
 import { fetchProducts, fetchProductByIdOrSlug, fetchCategories } from '@/lib/api/catalog.service';
 import type { Product, Category, PaginatedResponse } from '@/types/catalog';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductRichDescription from '@/components/ui/ProductRichDescription';
+import { getProductRichHtmlSource } from '@/lib/utils/productContent';
 
 const PER_PAGE = 12;
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
@@ -369,7 +371,15 @@ export default function CategorySlugPage() {
         </Grid>
 
         {/* Quick view modal */}
-        <Dialog open={!!quickViewProduct || quickViewLoading} onClose={() => setQuickViewProduct(null)} maxWidth="sm" fullWidth>
+        <Dialog
+          open={!!quickViewProduct || quickViewLoading}
+          onClose={() => {
+            setQuickViewProduct(null);
+            setQuickViewLoading(false);
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
           <DialogTitle>Quick view</DialogTitle>
           <DialogContent>
             {quickViewLoading ? (
@@ -395,9 +405,13 @@ export default function CategorySlugPage() {
                 <Typography variant="h6" fontWeight={600}>
                   {quickViewProduct.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {quickViewProduct.description || ''}
-                </Typography>
+                <Box sx={{ mb: 1 }}>
+                  <ProductRichDescription
+                    htmlSource={getProductRichHtmlSource(quickViewProduct)}
+                    elevation={0}
+                    sx={{ bgcolor: 'transparent', boxShadow: 'none', py: 0.25 }}
+                  />
+                </Box>
                 <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
                   ${typeof quickViewProduct.price === 'number' ? quickViewProduct.price.toFixed(2) : Number(quickViewProduct.price).toFixed(2)}
                 </Typography>

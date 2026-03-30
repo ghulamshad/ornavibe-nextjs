@@ -2,7 +2,6 @@
 
 import React, { useMemo, useRef } from 'react';
 import { Box, IconButton, useTheme } from '@mui/material';
-import { paperTranslucent, neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Slider from 'react-slick';
@@ -131,9 +130,11 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 2,
-            bgcolor: paperTranslucent(theme, 0.88),
-            boxShadow: 1,
-            '&:hover': { bgcolor: paperTranslucent(theme, 0.96) },
+            color: theme.palette.common.white,
+            bgcolor: 'transparent',
+            boxShadow: 'none',
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))',
+            '&:hover': { bgcolor: 'transparent', color: theme.palette.common.white, boxShadow: 'none' },
           }}
           size="large"
         >
@@ -150,9 +151,11 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 2,
-            bgcolor: paperTranslucent(theme, 0.88),
-            boxShadow: 1,
-            '&:hover': { bgcolor: paperTranslucent(theme, 0.96) },
+            color: theme.palette.common.white,
+            bgcolor: 'transparent',
+            boxShadow: 'none',
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))',
+            '&:hover': { bgcolor: 'transparent', color: theme.palette.common.white, boxShadow: 'none' },
           }}
           size="large"
         >
