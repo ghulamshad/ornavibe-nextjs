@@ -36,6 +36,7 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
   // Arrows on desktop only; mobile/tablet should rely on swipe (better UX + more space).
   const showNavArrows = useMediaQuery(theme.breakpoints.up('md'));
   const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const dispatch = useDispatch<AppDispatch>();
   const { categories, categoriesLoading } = useSelector((state: RootState) => state.catalog);
@@ -151,6 +152,68 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
     return null;
   }
 
+  const mobileCard = (cat: Category) => {
+    const href = `/categories/${cat.slug}`;
+    const src = cat.image_url ? resolveMediaUrl(cat.image_url) : '';
+    return (
+      <Box
+        key={cat.id}
+        component={Link}
+        href={href}
+        sx={{
+          flex: '0 0 auto',
+          width: 'calc(50% - 6px)',
+          minWidth: 150,
+          textDecoration: 'none',
+          color: 'inherit',
+          scrollSnapAlign: 'start',
+        }}
+      >
+        {src ? (
+          <Box
+            component="img"
+            src={src}
+            alt=""
+            loading="lazy"
+            sx={{ width: '100%', aspectRatio: '1', borderRadius: 2, objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: '100%',
+              aspectRatio: '1',
+              borderRadius: 2,
+              bgcolor: neutralSlate(theme, 0.1),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              color: 'text.secondary',
+            }}
+          >
+            {cat.name.slice(0, 2).toUpperCase()}
+          </Box>
+        )}
+        <Typography
+          component="span"
+          sx={{
+            mt: 1,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textAlign: 'center',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            lineHeight: 1.35,
+          }}
+        >
+          {cat.name}
+        </Typography>
+      </Box>
+    );
+  };
+
   return (
     <Box
       component="section"
@@ -187,149 +250,166 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
         </Box>
 
         <Box className="product_area">
-          <Box className="product_container bottom" sx={{ position: 'relative' }}>
-            <Slider
-              ref={sliderRef}
-              {...settings}
-              key={`${rootCategories.length}-${isSmDown ? 'sm' : 'lg'}`}
-              className="custom-row product_row1 featured-categories-slick"
+          {!isMdUp ? (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1.5,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                pb: 0.75,
+                scrollSnapType: 'x mandatory',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'thin',
+              }}
             >
-              {rootCategories.map((cat) => {
-                const href = `/categories/${cat.slug}`;
-                const src = cat.image_url ? resolveMediaUrl(cat.image_url) : '';
+              {rootCategories.map(mobileCard)}
+            </Box>
+          ) : (
+            <Box className="product_container bottom" sx={{ position: 'relative' }}>
+              <Slider
+                ref={sliderRef}
+                {...settings}
+                key={`${rootCategories.length}-${isSmDown ? 'sm' : 'lg'}`}
+                className="custom-row product_row1 featured-categories-slick"
+              >
+                {rootCategories.map((cat) => {
+                  const href = `/categories/${cat.slug}`;
+                  const src = cat.image_url ? resolveMediaUrl(cat.image_url) : '';
 
-                const thumb = src ? (
-                  <Box
-                    component="img"
-                    src={src}
-                    alt=""
-                    loading="lazy"
-                    sizes="(max-width: 480px) 45vw, (max-width: 900px) 30vw, 180px"
-                    sx={{
-                      width: '100%',
-                      aspectRatio: '1',
-                      objectFit: 'cover',
-                      display: 'block',
-                      borderRadius: 2,
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      width: '100%',
-                      aspectRatio: '1',
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: neutralSlate(theme, 0.1),
-                      typography: 'subtitle1',
-                      fontWeight: 700,
-                      color: 'text.secondary',
-                      px: 1,
-                      textAlign: 'center',
-                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                    }}
-                  >
-                    {cat.name.slice(0, 2).toUpperCase()}
-                  </Box>
-                );
-
-                return (
-                  <Box key={cat.id} className="item" sx={{ px: { xs: 0.5, sm: 0.75 }, outline: 'none', height: '100%' }}>
+                  const thumb = src ? (
                     <Box
-                      component={Link}
-                      href={href}
+                      component="img"
+                      src={src}
+                      alt=""
+                      loading="lazy"
+                      sizes="(max-width: 480px) 45vw, (max-width: 900px) 30vw, 180px"
                       sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100%',
-                        textDecoration: 'none',
-                        color: 'inherit',
+                        width: '100%',
+                        aspectRatio: '1',
+                        objectFit: 'cover',
+                        display: 'block',
                         borderRadius: 2,
-                        minWidth: 0,
-                        '&:focus-visible': {
-                          outline: `2px solid ${theme.palette.primary.main}`,
-                          outlineOffset: 3,
-                        },
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: neutralSlate(theme, 0.1),
+                        typography: 'subtitle1',
+                        fontWeight: 700,
+                        color: 'text.secondary',
+                        px: 1,
+                        textAlign: 'center',
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
                       }}
                     >
-                      {thumb}
-                      <Typography
-                        component="span"
+                      {cat.name.slice(0, 2).toUpperCase()}
+                    </Box>
+                  );
+
+                  return (
+                    <Box key={cat.id} className="item" sx={{ px: { xs: 0.5, sm: 0.75 }, outline: 'none', height: '100%' }}>
+                      <Box
+                        component={Link}
+                        href={href}
                         sx={{
-                          mt: { xs: 1, sm: 1.25 },
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textAlign: 'center',
-                          color: 'text.primary',
-                          fontWeight: 600,
-                          lineHeight: 1.35,
-                          fontSize: { xs: '0.8rem', sm: '0.8125rem', md: '0.875rem' },
-                          minHeight: { xs: '2.7em', sm: 'auto' },
-                          px: 0.25,
-                          wordBreak: 'break-word',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          height: '100%',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          borderRadius: 2,
+                          minWidth: 0,
+                          '&:focus-visible': {
+                            outline: `2px solid ${theme.palette.primary.main}`,
+                            outlineOffset: 3,
+                          },
                         }}
                       >
-                        {cat.name}
-                      </Typography>
+                        {thumb}
+                        <Typography
+                          component="span"
+                          sx={{
+                            mt: { xs: 1, sm: 1.25 },
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textAlign: 'center',
+                            color: 'text.primary',
+                            fontWeight: 600,
+                            lineHeight: 1.35,
+                            fontSize: { xs: '0.8rem', sm: '0.8125rem', md: '0.875rem' },
+                            minHeight: { xs: '2.7em', sm: 'auto' },
+                            px: 0.25,
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {cat.name}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                );
-              })}
-            </Slider>
+                  );
+                })}
+              </Slider>
 
-            {showNavArrows ? (
-              <>
-                <IconButton
-                  type="button"
-                  aria-label="Previous categories"
-                  onClick={() => sliderRef.current?.slickPrev()}
-                  className="prev_arrow slick-arrow"
-                  sx={{
-                    position: 'absolute',
-                    top: '42%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 2,
-                    color: 'text.primary',
-                    bgcolor: 'transparent',
-                    boxShadow: 'none',
-                    width: { sm: 44, md: 48 },
-                    height: { sm: 44, md: 48 },
-                    '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
-                    left: { sm: -4, md: -8 },
-                  }}
-                  size="large"
-                >
-                  <ChevronLeft fontSize="medium" />
-                </IconButton>
-                <IconButton
-                  type="button"
-                  aria-label="Next categories"
-                  onClick={() => sliderRef.current?.slickNext()}
-                  className="next_arrow slick-arrow"
-                  sx={{
-                    position: 'absolute',
-                    top: '42%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 2,
-                    color: 'text.primary',
-                    bgcolor: 'transparent',
-                    boxShadow: 'none',
-                    width: { sm: 44, md: 48 },
-                    height: { sm: 44, md: 48 },
-                    '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
-                    right: { sm: -4, md: -8 },
-                  }}
-                  size="large"
-                >
-                  <ChevronRight fontSize="medium" />
-                </IconButton>
-              </>
-            ) : null}
-          </Box>
+              {showNavArrows ? (
+                <>
+                  <IconButton
+                    type="button"
+                    aria-label="Previous categories"
+                    onClick={() => sliderRef.current?.slickPrev()}
+                    className="prev_arrow slick-arrow"
+                    sx={{
+                      position: 'absolute',
+                      top: '42%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 2,
+                      color: 'text.primary',
+                      bgcolor: 'transparent',
+                      boxShadow: 'none',
+                      width: { sm: 44, md: 48 },
+                      height: { sm: 44, md: 48 },
+                      '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
+                      left: { sm: -4, md: -8 },
+                    }}
+                    size="large"
+                  >
+                    <ChevronLeft fontSize="medium" />
+                  </IconButton>
+                  <IconButton
+                    type="button"
+                    aria-label="Next categories"
+                    onClick={() => sliderRef.current?.slickNext()}
+                    className="next_arrow slick-arrow"
+                    sx={{
+                      position: 'absolute',
+                      top: '42%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 2,
+                      color: 'text.primary',
+                      bgcolor: 'transparent',
+                      boxShadow: 'none',
+                      width: { sm: 44, md: 48 },
+                      height: { sm: 44, md: 48 },
+                      '&:hover': { bgcolor: 'transparent', boxShadow: 'none' },
+                      right: { sm: -4, md: -8 },
+                    }}
+                    size="large"
+                  >
+                    <ChevronRight fontSize="medium" />
+                  </IconButton>
+                </>
+              ) : null}
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>

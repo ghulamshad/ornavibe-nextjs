@@ -126,8 +126,152 @@ export default function TestimonialsSection({
 
         <Box className="product_area" sx={{ width: '100%' }}>
           <Box className="product_container bottom" sx={{ position: 'relative', width: '100%' }}>
-            <Slider key={`${list.length}-${isXs ? 'xs' : isSm ? 'sm' : isMd ? 'md' : 'lg'}`} {...settings} className="testimonial_active product_row1 testimonials-slick">
-              {list.map((t, index) => {
+            {isXs ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1.25,
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  pb: 0.75,
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'thin',
+                }}
+              >
+                {list.map((t, index) => {
+                  const avatar = t.avatar_url?.trim() ? resolveMediaUrl(t.avatar_url) : '';
+                  const rating = typeof t.rating === 'number' && t.rating > 0 ? Math.min(5, t.rating) : 5;
+
+                  return (
+                    <Box
+                      key={`${t.name}-${index}`}
+                      sx={{
+                        flex: '0 0 auto',
+                        width: 'min(86vw, 360px)',
+                        scrollSnapAlign: 'start',
+                      }}
+                    >
+                      <Box
+                        className="box"
+                        sx={{
+                          width: '100%',
+                          height: cardHeight,
+                          minHeight: cardHeight,
+                          maxHeight: cardHeight,
+                          p: { xs: 2, sm: 2.25, md: 2.5 },
+                          borderRadius: 2,
+                          bgcolor: 'background.paper',
+                          border: 1,
+                          borderColor: 'divider',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          boxShadow: 1,
+                          boxSizing: 'border-box',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Box
+                          className="imgs flex_center"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 1,
+                            mb: 1.25,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {avatar ? (
+                            <Box
+                              component="img"
+                              src={avatar}
+                              alt=""
+                              className="profile_img"
+                              loading="lazy"
+                              sx={{
+                                width: 52,
+                                height: 52,
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                flexShrink: 0,
+                                bgcolor: neutralSlate(theme, 0.12),
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              className="profile_img"
+                              sx={{
+                                width: 52,
+                                height: 52,
+                                borderRadius: '50%',
+                                flexShrink: 0,
+                                bgcolor: 'primary.light',
+                                color: 'primary.contrastText',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.05rem',
+                                fontWeight: 700,
+                              }}
+                              aria-hidden
+                            >
+                              {(t.name || 'U').charAt(0).toUpperCase()}
+                            </Box>
+                          )}
+                          <Rating
+                            name={`testi-rating-${index}`}
+                            value={rating}
+                            readOnly
+                            size="small"
+                            className="rating_img"
+                            sx={{
+                              flexShrink: 0,
+                              '& .MuiSvgIcon-root': { fontSize: '1.2rem' },
+                            }}
+                          />
+                        </Box>
+
+                        <Typography
+                          sx={{
+                            color: 'text.primary',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            mb: 0.5,
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {t.name}
+                        </Typography>
+                        {t.role ? (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {t.role}
+                          </Typography>
+                        ) : null}
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.secondary',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 6,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {t.quote}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            ) : (
+              <Slider
+                key={`${list.length}-${isXs ? 'xs' : isSm ? 'sm' : isMd ? 'md' : 'lg'}`}
+                {...settings}
+                className="testimonial_active product_row1 testimonials-slick"
+              >
+                {list.map((t, index) => {
                 const avatar = t.avatar_url?.trim() ? resolveMediaUrl(t.avatar_url) : '';
                 const rating = typeof t.rating === 'number' && t.rating > 0 ? Math.min(5, t.rating) : 5;
 
@@ -261,8 +405,9 @@ export default function TestimonialsSection({
                     </Box>
                   </Box>
                 );
-              })}
-            </Slider>
+                })}
+              </Slider>
+            )}
           </Box>
         </Box>
       </Box>
