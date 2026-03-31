@@ -95,8 +95,8 @@ export default function ComparisonSection() {
           </Typography>
         </Box>
 
-        <TableContainer component={Paper} sx={{ boxShadow: 3 }} data-aos="fade-up">
-          <Table>
+        <TableContainer component={Paper} sx={{ boxShadow: 3, overflowX: 'auto' }} data-aos="fade-up">
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: surfaceSoft(theme) }}>
                 <TableCell sx={{ fontWeight: 600 }}>Feature</TableCell>

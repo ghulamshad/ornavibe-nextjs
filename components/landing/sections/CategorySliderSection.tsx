@@ -69,8 +69,9 @@ export default function CategorySliderSection() {
       '(max-width: 1400px)': { slides: { perView: 5 } },
       '(max-width: 1200px)': { slides: { perView: 4 } },
       '(max-width: 900px)': { slides: { perView: 3 } },
-      '(max-width: 600px)': { slides: { perView: 2 } },
-      '(max-width: 400px)': { slides: { perView: 1.2 } }, // 👀 peek
+      '(max-width: 600px)': { slides: { perView: 2, spacing: 12 } },
+      '(max-width: 480px)': { slides: { perView: 1.6, spacing: 10 } }, // 👀 peek
+      '(max-width: 360px)': { slides: { perView: 1.2, spacing: 10 } }, // very small phones
     },
     created() {
       setLoaded(true);

@@ -30,6 +30,7 @@ import {
   Link as MuiLink,
   Rating,
   Divider,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { surfaceSoft } from '@/lib/theme/storefrontSurfaces';
@@ -62,6 +63,7 @@ type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_des
 
 export default function ProductsPage() {
   const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -506,7 +508,7 @@ export default function ProductsPage() {
                   setSort(e.target.value as SortOption);
                   updateUrl({ sort: e.target.value as SortOption });
                 }}
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: { xs: '100%', sm: 180 } }}
               >
                 <MenuItem value="newest">Default / Newest</MenuItem>
                 <MenuItem value="price_asc">Price: low to high</MenuItem>
@@ -625,6 +627,7 @@ export default function ProductsPage() {
           }}
           maxWidth="md"
           fullWidth
+          fullScreen={isSmDown}
         >
           <DialogTitle>Quick view</DialogTitle>
           <DialogContent>

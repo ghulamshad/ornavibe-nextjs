@@ -269,8 +269,8 @@ export default function OrderDetailPage() {
             </Grid>
           )}
         </Grid>
-        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-          <Table>
+        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 640 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Item</TableCell>
@@ -282,7 +282,7 @@ export default function OrderDetailPage() {
             <TableBody>
               {order.items?.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
+                  <TableCell sx={{ maxWidth: 260, whiteSpace: 'normal', wordBreak: 'break-word' }}>{item.name}</TableCell>
                   <TableCell align="right">{formatCurrency(item.price, currencySymbol)}</TableCell>
                   <TableCell align="center">{item.quantity}</TableCell>
                   <TableCell align="right">{formatCurrency(item.total ?? 0, currencySymbol)}</TableCell>

@@ -317,8 +317,15 @@ export default function ProductCard({
         variant="subtitle1"
         fontWeight={600}
         gutterBottom
-        noWrap
-        sx={{ color: 'text.primary', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+        sx={{
+          color: 'text.primary',
+          textDecoration: 'none',
+          display: '-webkit-box',
+          WebkitLineClamp: { xs: 2, sm: 1 },
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          '&:hover': { textDecoration: 'underline' },
+        }}
       >
         {product.name}
       </Typography>

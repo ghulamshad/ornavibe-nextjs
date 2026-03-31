@@ -33,7 +33,9 @@ const SECTION_TITLE_ID = 'featured-categories-heading';
 
 export default function FeaturedCategories({ title = 'Featured Categories' }: FeaturedCategoriesProps) {
   const theme = useTheme();
-  const showNavArrows = useMediaQuery(theme.breakpoints.up('sm'));
+  // Arrows on desktop only; mobile/tablet should rely on swipe (better UX + more space).
+  const showNavArrows = useMediaQuery(theme.breakpoints.up('md'));
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const dispatch = useDispatch<AppDispatch>();
   const { categories, categoriesLoading } = useSelector((state: RootState) => state.catalog);
@@ -53,7 +55,8 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
     const cap = (max: number) => Math.min(max, Math.max(1, n));
     const motionMs = reduceMotion ? 220 : 450;
     return {
-      centerMode: n > 1,
+      // CenterMode makes tiny “7 per row” looking tiles on small screens; keep it desktop-only.
+      centerMode: !isSmDown && n > 1,
       centerPadding: '0',
       infinite: n > 1,
       speed: motionMs,
@@ -74,8 +77,10 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
       responsive: [
         { breakpoint: 1536, settings: { slidesToShow: cap(6), centerMode: n > 1, slidesToScroll: 1 } },
         { breakpoint: 1200, settings: { slidesToShow: cap(5), centerMode: n > 1, slidesToScroll: 1 } },
+        // Tablet
         { breakpoint: 900, settings: { slidesToShow: cap(4), centerMode: false, slidesToScroll: 1 } },
-        { breakpoint: 600, settings: { slidesToShow: cap(3), centerMode: false, slidesToScroll: 1 } },
+        // Phones: match product grid feel (2 columns)
+        { breakpoint: 600, settings: { slidesToShow: cap(2), centerMode: false, slidesToScroll: 1, infinite: n > 2 } },
         {
           breakpoint: 480,
           settings: {
@@ -87,7 +92,7 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
         },
       ],
     };
-  }, [rootCategories, reduceMotion]);
+  }, [rootCategories, reduceMotion, isSmDown]);
 
   if (categoriesLoading && !rootCategories.length) {
     return (
@@ -160,7 +165,8 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
         boxSizing: 'border-box',
         '& .featured-categories-slick .slick-slide': { px: { xs: 0.5, sm: 0.625, md: 0.5 } },
         '& .featured-categories-slick .slick-list': {
-          mx: { xs: 0, sm: showNavArrows ? 5 : 0 },
+          // Only add side space when desktop arrows are visible.
+          mx: { xs: 0, md: showNavArrows ? 5 : 0 },
           overflow: 'hidden',
         },
         '& .featured-categories-slick .slick-track': { display: 'flex', alignItems: 'stretch' },

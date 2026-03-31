@@ -116,8 +116,8 @@ export default function OrdersPage() {
                 <Tab label="Refunded" value="refunded" />
               </Tabs>
             </Box>
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
+            <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+              <Table size="small" sx={{ minWidth: 720 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Order #</TableCell>
@@ -132,7 +132,7 @@ export default function OrdersPage() {
                   {filteredOrders.map((order) => (
                     <TableRow key={order.id} hover>
                       <TableCell>#{order.id}</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {new Date(order.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>

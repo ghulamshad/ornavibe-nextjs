@@ -389,7 +389,7 @@ export default function ProductDetailPage() {
       </Container>
 
       {/* Magnifier modal */}
-      <Dialog open={magnifierOpen} onClose={() => setMagnifierOpen(false)} maxWidth={false}>
+      <Dialog open={magnifierOpen} onClose={() => setMagnifierOpen(false)} maxWidth={false} fullScreen>
         <DialogTitle>Zoom</DialogTitle>
         <DialogContent>
           {mainImage && (

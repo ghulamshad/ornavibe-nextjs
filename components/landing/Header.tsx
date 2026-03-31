@@ -2,11 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AppBar,
   Badge,
   Box,
   Button,
+  Chip,
   Collapse,
   Container,
   Dialog,
@@ -15,10 +17,12 @@ import {
   Divider,
   Drawer,
   IconButton,
+  InputAdornment,
   List,
   ListItemButton,
   ListItemText,
   Paper,
+  TextField,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -32,6 +36,7 @@ import {
   ShoppingCartOutlined as CartIcon,
   PersonOutline as PersonIcon,
   Close as CloseIcon,
+  Clear as ClearIcon,
   ExpandMore,
   ExpandLess,
   Facebook,
@@ -44,12 +49,29 @@ import {
   Link as LinkIconMui,
 } from '@mui/icons-material';
 import { fetchHeaderNavCategories } from '@/lib/api/catalog.service';
+import { fetchProducts } from '@/lib/api/catalog.service';
 import { categoriesToNavItems, HEADER_NAV_FALLBACK, type NavItem } from '@/lib/headerNavFromCategories';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { resolveStoreLogoSrc } from '@/lib/utils/branding';
+import { resolveMediaUrl } from '@/lib/utils/media';
+import type { Product } from '@/types/catalog';
 
 const TOPBAR_HEIGHT = 42;
 const HEADER_HEIGHT = 76;
+
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightText(text: string, query: string): Array<{ text: string; match: boolean }> {
+  const q = query.trim();
+  if (!q) return [{ text, match: false }];
+  const re = new RegExp(`(${escapeRegExp(q)})`, 'ig');
+  const parts = text.split(re);
+  return parts
+    .filter((p) => p.length > 0)
+    .map((p) => ({ text: p, match: p.toLowerCase() === q.toLowerCase() }));
+}
 
 function topbarSocialIcon(label: string) {
   const l = label.toLowerCase();
@@ -150,6 +172,7 @@ function MegaPanel({ item }: { item: NavItem }) {
 
 export default function Header() {
   const theme = useTheme();
+  const router = useRouter();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { topbar, store, footer } = useSiteContent();
   const logoSrc = resolveStoreLogoSrc(store?.logo_url);
@@ -160,6 +183,10 @@ export default function Header() {
   const socialLinks = Array.isArray(topbar?.social_links) ? topbar!.social_links! : [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -187,6 +214,80 @@ export default function Header() {
 
   const activeItem = useMemo(() => nav.find((n) => n.label === activeMenu), [nav, activeMenu]);
   const topCollections = useMemo(() => nav.map((n) => ({ label: n.label, href: n.href })), [nav]);
+
+  useEffect(() => {
+    // hydrate recent searches (client-only)
+    try {
+      const raw = window.localStorage.getItem('ornavibe_recent_searches');
+      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+      if (Array.isArray(parsed)) {
+        setRecentSearches(parsed.filter((x) => typeof x === 'string').slice(0, 8));
+      }
+    } catch {
+      // ignore storage parse errors
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearching(false);
+      setSearchResults([]);
+      return;
+    }
+
+    let cancelled = false;
+    setSearching(true);
+    const id = window.setTimeout(() => {
+      void fetchProducts({ search: q, per_page: 8, sort: 'newest' })
+        .then((data) => {
+          const list = Array.isArray(data) ? data : data.data ?? [];
+          if (!cancelled) setSearchResults(Array.isArray(list) ? list : []);
+        })
+        .catch(() => {
+          if (!cancelled) setSearchResults([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [searchOpen, searchQuery]);
+
+  const pushRecentSearch = (query: string) => {
+    setRecentSearches((prev) => {
+      const next = [query, ...prev.filter((x) => x.toLowerCase() !== query.toLowerCase())].slice(0, 8);
+      try {
+        window.localStorage.setItem('ornavibe_recent_searches', JSON.stringify(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const submitSearch = (q: string) => {
+    const query = q.trim();
+    if (!query) return;
+    pushRecentSearch(query);
+    setSearchOpen(false);
+    setSearchResults([]);
+    setSearching(false);
+    router.push(`/products?search=${encodeURIComponent(query)}`);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearching(false);
+  };
 
   return (
     <>
@@ -396,12 +497,171 @@ export default function Header() {
         {!isMobile && activeItem?.blocks?.length ? <MegaPanel item={activeItem} /> : null}
       </Box>
 
-      <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={searchOpen}
+        onClose={closeSearch}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Search
-          <IconButton onClick={() => setSearchOpen(false)}><CloseIcon /></IconButton>
+          <IconButton onClick={closeSearch} aria-label="Close search"><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent>
+          <TextField
+            autoFocus
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                submitSearch(searchQuery);
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSearch();
+              }
+            }}
+            placeholder="Search products…"
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="Clear search"
+                    onClick={() => setSearchQuery('')}
+                    edge="end"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
+            }}
+          />
+
+          {!searchQuery.trim() && recentSearches.length ? (
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography sx={{ fontWeight: 800 }}>Recent searches</Typography>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setRecentSearches([]);
+                    try {
+                      window.localStorage.removeItem('ornavibe_recent_searches');
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Clear
+                </Button>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {recentSearches.map((q) => (
+                  <Chip
+                    key={q}
+                    label={q}
+                    variant="outlined"
+                    onClick={() => submitSearch(q)}
+                    sx={{ fontWeight: 600 }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          ) : null}
+
+          {searchQuery.trim().length >= 2 ? (
+            <Box sx={{ mb: 2 }}>
+              <Typography sx={{ mb: 1, fontWeight: 800 }}>
+                Results {searching ? '…' : ''}
+              </Typography>
+              {searchResults.length ? (
+                <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {searchResults.map((p) => (
+                    <ListItemButton
+                      key={String(p.id)}
+                      component={Link}
+                      href={`/products/${p.slug || p.id}`}
+                      onClick={closeSearch}
+                      sx={{ borderRadius: 1 }}
+                    >
+                      <Box
+                        component="img"
+                        alt=""
+                        src={resolveMediaUrl(p.images?.[0] || p.image_url || '') || undefined}
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 1.25,
+                          objectFit: 'cover',
+                          bgcolor: 'grey.100',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          mr: 1.25,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <ListItemText
+                        primary={
+                          <Typography component="span" sx={{ fontWeight: 800 }}>
+                            {highlightText(p.name, searchQuery).map((part, idx) => (
+                              <Box
+                                key={idx}
+                                component="span"
+                                sx={{
+                                  bgcolor: part.match ? alpha(theme.palette.primary.main, 0.14) : 'transparent',
+                                  color: part.match ? 'text.primary' : 'text.primary',
+                                  borderRadius: 0.75,
+                                  px: part.match ? 0.35 : 0,
+                                  py: part.match ? 0.05 : 0,
+                                }}
+                              >
+                                {part.text}
+                              </Box>
+                            ))}
+                          </Typography>
+                        }
+                        secondary={
+                          p.category?.name
+                            ? `${p.category.name}${p.price ? ` • Rs.${p.price}` : ''}`
+                            : p.price
+                              ? `Rs.${p.price}`
+                              : undefined
+                        }
+                      />
+                    </ListItemButton>
+                  ))}
+                </List>
+              ) : (
+                <Typography color="text.secondary" variant="body2">
+                  {searching ? 'Searching…' : 'No products found.'}
+                </Typography>
+              )}
+
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => submitSearch(searchQuery)}
+                  sx={{ textTransform: 'none', fontWeight: 700 }}
+                  disabled={searching}
+                >
+                  View all results
+                </Button>
+              </Box>
+            </Box>
+          ) : null}
+
           <Typography sx={{ mb: 1.2, fontWeight: 700 }}>Top collection:</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {topCollections.map((c) => (

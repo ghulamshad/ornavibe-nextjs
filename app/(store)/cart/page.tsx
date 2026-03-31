@@ -1,7 +1,27 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Box, Container, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert, IconButton, TextField } from '@mui/material';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Alert,
+  IconButton,
+  TextField,
+  Stack,
+  Divider,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
@@ -11,6 +31,8 @@ import { useSiteContent } from '@/contexts/SiteContentContext';
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function CartPage() {
+  const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch<AppDispatch>();
   const { cart, loading, error } = useSelector((state: RootState) => state.cart);
   const content = useSiteContent();
@@ -39,37 +61,81 @@ export default function CartPage() {
           </Paper>
         ) : (
           <>
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-              <Table>
-                <TableHead><TableRow><TableCell>Product</TableCell><TableCell align="right">Price</TableCell><TableCell align="center">Qty</TableCell><TableCell align="right">Total</TableCell><TableCell /></TableRow></TableHead>
-                <TableBody>
-                  {cart?.items?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.name || (item as any).product_name || `Item ${item.id}`}</TableCell>
-                      <TableCell align="right">{formatCurrency(item.price, currencySymbol)}</TableCell>
-                      <TableCell align="center">{item.quantity}</TableCell>
-                      <TableCell align="right">{formatCurrency(Number(item.price) * item.quantity, currencySymbol)}</TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" onClick={() => dispatch(removeItemRequest(item.id))}><DeleteIcon /></IconButton>
-                      </TableCell>
+            {isSmDown ? (
+              <Stack spacing={1.25} sx={{ mb: 3 }}>
+                {cart?.items?.map((item) => {
+                  const name = item.name || (item as any).product_name || `Item ${item.id}`;
+                  const price = Number(item.price) || 0;
+                  const qty = item.quantity || 0;
+                  const total = price * qty;
+                  return (
+                    <Paper key={item.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography fontWeight={800} sx={{ wordBreak: 'break-word' }}>
+                            {name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                            {formatCurrency(price, currencySymbol)} × {qty}
+                          </Typography>
+                          <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 0.75 }}>
+                            {formatCurrency(total, currencySymbol)}
+                          </Typography>
+                        </Box>
+                        <IconButton size="small" onClick={() => dispatch(removeItemRequest(item.id))} aria-label="Remove item">
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
+                <Table sx={{ minWidth: 640 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Product</TableCell>
+                      <TableCell align="right">Price</TableCell>
+                      <TableCell align="center">Qty</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                      <TableCell />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {cart?.items?.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell sx={{ maxWidth: 220, whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                          {item.name || (item as any).product_name || `Item ${item.id}`}
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(item.price, currencySymbol)}</TableCell>
+                        <TableCell align="center">{item.quantity}</TableCell>
+                        <TableCell align="right">{formatCurrency(Number(item.price) * item.quantity, currencySymbol)}</TableCell>
+                        <TableCell align="right">
+                          <IconButton size="small" onClick={() => dispatch(removeItemRequest(item.id))} aria-label="Remove item">
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
             <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <TextField
                 size="small"
                 placeholder="Discount code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                sx={{ minWidth: 200 }}
+                sx={{ minWidth: { xs: '100%', sm: 200 } }}
               />
               <Button variant="outlined" onClick={() => code.trim() && dispatch(applyDiscountRequest(code.trim()))}>Apply</Button>
               {cart?.discount_code && (
                 <Typography variant="body2" color="success.main">Code &quot;{cart.discount_code}&quot; applied (−{formatCurrency(cart.discount_amount ?? 0, currencySymbol)})</Typography>
               )}
             </Box>
+            <Divider sx={{ mb: 2 }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="body1">Subtotal: {formatCurrency(cart?.subtotal ?? 0, currencySymbol)}</Typography>
