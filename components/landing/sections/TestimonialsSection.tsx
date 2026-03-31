@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Box, Typography, Button, useTheme } from '@mui/material';
+import { Box, Typography, Button, useMediaQuery, useTheme } from '@mui/material';
 import { neutralSlate } from '@/lib/theme/storefrontSurfaces';
 import Slider from 'react-slick';
 import type { Settings } from 'react-slick';
@@ -33,6 +33,9 @@ export default function TestimonialsSection({
   exploreMoreLabel = 'Explore More',
 }: TestimonialsSectionProps) {
   const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isMd = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const list = useMemo(
     () => (Array.isArray(items) ? items.filter((t) => t.quote?.trim() || t.name?.trim()) : []),
     [items]
@@ -41,13 +44,14 @@ export default function TestimonialsSection({
   const settings: Settings = useMemo(() => {
     const n = list.length;
     const cap = (max: number) => Math.min(max, Math.max(1, n));
+    const slidesToShow = isXs ? (n <= 1 ? 1 : 1.08) : isSm ? cap(2) : isMd ? cap(3) : n <= 2 ? cap(2) : 3.6;
     return {
       centerMode: false,
       centerPadding: '0',
       arrows: false,
       rows: 1,
       infinite: false,
-      slidesToShow: n <= 1 ? 1 : n <= 2 ? 2 : 3.6,
+      slidesToShow,
       slidesToScroll: 1,
       autoplay: n > 2,
       speed: 1000,
@@ -56,50 +60,8 @@ export default function TestimonialsSection({
       pauseOnHover: true,
       swipe: true,
       touchThreshold: 8,
-      responsive: [
-        {
-          breakpoint: 1440,
-          settings: {
-            slidesToShow: cap(3),
-            slidesToScroll: 1,
-            infinite: false,
-          },
-        },
-        {
-          breakpoint: 1200,
-          settings: {
-            slidesToShow: cap(2),
-            slidesToScroll: 1,
-            infinite: false,
-          },
-        },
-        {
-          breakpoint: 900,
-          settings: {
-            slidesToShow: cap(2),
-            slidesToScroll: 1,
-            infinite: false,
-          },
-        },
-        {
-          breakpoint: 600,
-          settings: {
-            slidesToShow: n <= 1 ? 1 : 1.12,
-            slidesToScroll: 1,
-            infinite: false,
-          },
-        },
-        {
-          breakpoint: 480,
-          settings: {
-            slidesToShow: 1,
-            slidesToScroll: 1,
-            infinite: false,
-          },
-        },
-      ],
     };
-  }, [list.length]);
+  }, [list.length, isXs, isSm, isMd]);
 
   if (!list.length) {
     return null;
@@ -164,7 +126,7 @@ export default function TestimonialsSection({
 
         <Box className="product_area" sx={{ width: '100%' }}>
           <Box className="product_container bottom" sx={{ position: 'relative', width: '100%' }}>
-            <Slider {...settings} className="testimonial_active product_row1 testimonials-slick">
+            <Slider key={`${list.length}-${isXs ? 'xs' : isSm ? 'sm' : isMd ? 'md' : 'lg'}`} {...settings} className="testimonial_active product_row1 testimonials-slick">
               {list.map((t, index) => {
                 const avatar = t.avatar_url?.trim() ? resolveMediaUrl(t.avatar_url) : '';
                 const rating = typeof t.rating === 'number' && t.rating > 0 ? Math.min(5, t.rating) : 5;

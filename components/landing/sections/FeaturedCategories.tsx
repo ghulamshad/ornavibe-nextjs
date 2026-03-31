@@ -191,6 +191,7 @@ export default function FeaturedCategories({ title = 'Featured Categories' }: Fe
             <Slider
               ref={sliderRef}
               {...settings}
+              key={`${rootCategories.length}-${isSmDown ? 'sm' : 'lg'}`}
               className="custom-row product_row1 featured-categories-slick"
             >
               {rootCategories.map((cat) => {
