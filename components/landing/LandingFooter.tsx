@@ -45,13 +45,14 @@ export default function LandingFooter() {
               <Box
                 component="img"
                 src={logoSrc}
+                // src="/assets/header-logo.png"
                 alt={footer?.brand || 'Store'}
-                sx={{ width: 40, height: 40, mr: 1.5, objectFit: 'contain', display: 'block' }}
+                sx={{ width: 200, height: 80, mr: 1.5, objectFit: 'contain', display: 'block' }}
               />
               <Box>
-                <Typography variant="h6" fontWeight={700}>
+                {/* <Typography variant="h6" fontWeight={700}>
                   {footer.brand}
-                </Typography>
+                </Typography> */}
                 <Typography variant="body2" sx={{ color: fgMuted }}>
                   {footer.company}
                 </Typography>

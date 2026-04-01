@@ -157,6 +157,8 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
                   priority={isLcp}
                   quality={88}
                   unoptimized={unoptimized}
+                  objectFit="cover"
+                  objectPosition="center" 
                 />
               </Box>
             );

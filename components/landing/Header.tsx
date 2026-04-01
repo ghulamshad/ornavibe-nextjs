@@ -408,8 +408,8 @@ export default function Header() {
               <Box component={Link} href="/" sx={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifySelf: isMobile ? 'center' : 'start' }}>
                 <Box
                   component="img"
-                  // src={logoSrc}
-                  src="/assets/header-logo.png"
+                  src={logoSrc}
+                  // src="/assets/header-logo.png"
                   alt={brandAlt}
                   sx={{ width: { xs: 130, md: 165 }, height: { xs: 44, md: 82 }, objectFit: 'contain', display: 'block' }}
                 />
