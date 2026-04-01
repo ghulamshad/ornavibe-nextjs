@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Box, Grid, Typography, Skeleton, Rating, useTheme } from '@mui/material';
 import { neutralSlate, surfaceSoft } from '@/lib/theme/storefrontSurfaces';
 import Link from 'next/link';
-import { fetchProducts } from '@/lib/api/catalog.service';
 import type { Product } from '@/types/catalog';
 import { resolveMediaUrl } from '@/lib/utils/media';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import { fetchProductsRequest } from '@/redux/slices/catalog.slice';
 
 export interface FeaturedProductsProps {
   title?: string;
@@ -50,35 +52,17 @@ function originalPriceForDiscount(current: number, percent: number): number | nu
 
 export default function FeaturedProducts({ title = 'Featured Products', limit = 48 }: FeaturedProductsProps) {
   const theme = useTheme();
-  const [rows, setRows] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { products, loading } = useSelector((state: RootState) => state.catalog);
   const site = useSiteContent();
   const symbol = site.store?.currency_symbol ?? 'Rs.';
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchProducts({ per_page: 50, sort: 'newest' })
-      .then((data) => {
-        const list = Array.isArray(data) ? data : (data as { data?: Product[] }).data ?? [];
-        if (!cancelled) {
-          setRows(list);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setRows([]);
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    dispatch(fetchProductsRequest(undefined));
+  }, [dispatch]);
 
   const list = useMemo(() => {
-    return [...rows]
+    return [...products]
       .filter((p) => p.is_active !== false && p.slug)
       .sort((a, b) => {
         const ta = a.is_trending ? 1 : 0;
@@ -89,7 +73,7 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
         return db - da;
       })
       .slice(0, limit);
-  }, [rows, limit]);
+  }, [products, limit]);
 
   if (!loading && !list.length) {
     return null;
@@ -102,17 +86,19 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
       sx={{
         py: { xs: 4, md: 6 },
         width: '100%',
+        maxWidth: '100%',
         bgcolor: 'background.default',
+        px: { xs: 2, sm: 2.5, md: 3 },
       }}
     >
-      <Box className="home_products" sx={{ maxWidth: 'xl', mx: 'auto', px: { xs: 2, md: 3 } }}>
-        <Box className="section_title" sx={{ mb: { xs: 2, md: 3 }, textAlign: { xs: 'center', md: 'left' } }}>
-          <Typography variant="h4" component="h2" fontWeight={700}>
+      <Box className="home_products" sx={{ maxWidth: 'xl', mx: 'auto' }}>
+        <Box className="section_title" sx={{ mb: { xs: 2, md: 3 }, textAlign: { xs: 'center', sm: 'left' } }}>
+          <Typography variant="h4" component="h2" fontWeight={700} sx={{ fontSize: { xs: '1.35rem', sm: '1.5rem', md: undefined } }}>
             {title}
           </Typography>
         </Box>
 
-        <Grid container spacing={2} className="row">
+        <Grid container spacing={{ xs: 1.5, sm: 2 }} className="row">
           {loading && !list.length
             ? Array.from({ length: 8 }).map((_, i) => (
                 <Grid key={i} size={{ xs: 6, md: 6, lg: 3 }} className="col-md-6 col-lg-3 col-6">
@@ -218,7 +204,7 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
                         )}
                       </Box>
 
-                      <Box className="product_content" sx={{ p: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <Box className="product_content" sx={{ p: { xs: 1.25, sm: 1.5 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <Typography
                           component="h3"
                           className="popup_cart_title"
@@ -230,7 +216,8 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
                             WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
-                            minHeight: 40,
+                            minHeight: { xs: 36, sm: 40 },
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
                           }}
                         >
                           <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -248,9 +235,9 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
                             mt: 'auto',
                           }}
                         >
-                          <Box>
+                          <Box sx={{ minWidth: 0 }}>
                             {categoryLine ? (
-                              <Typography className="tag_cate" variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                              <Typography className="tag_cate" variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                                 {categoryLine}
                               </Typography>
                             ) : (
@@ -263,7 +250,7 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
                                 variant="body2"
                                 fontWeight={700}
                                 color="primary"
-                                sx={{ display: 'block' }}
+                                sx={{ display: 'block', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                               >
                                 {formatCurrency(Number.isFinite(priceNum) ? priceNum : 0, symbol)}
                               </Typography>
@@ -284,7 +271,7 @@ export default function FeaturedProducts({ title = 'Featured Products', limit = 
                           {rating != null && rating > 0 ? (
                             <Rating value={rating} readOnly precision={0.5} size="small" sx={{ flexShrink: 0 }} />
                           ) : (
-                            <Box sx={{ width: 88, flexShrink: 0 }} aria-hidden />
+                            <Box sx={{ width: { xs: 76, sm: 88 }, flexShrink: 0 }} aria-hidden />
                           )}
                         </Box>
                       </Box>

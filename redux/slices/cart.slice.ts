@@ -17,7 +17,10 @@ const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    fetchCartRequest() {},
+    fetchCartRequest(state) {
+      state.loading = true;
+      state.error = null;
+    },
     fetchCartSuccess(state, action: PayloadAction<Cart>) {
       state.cart = action.payload;
       state.loading = false;

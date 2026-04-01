@@ -8,6 +8,7 @@ import checkoutReducer from './checkout.slice';
 import ordersReducer from './orders.slice';
 import reviewsReducer from './reviews.slice';
 import wishlistReducer from './wishlist.slice';
+import siteReducer from './site.slice';
 import adminDashboardReducer from './admin/adminDashboard.slice';
 import adminCategoriesReducer from './admin/adminCategories.slice';
 import adminProductsReducer from './admin/adminProducts.slice';
@@ -26,6 +27,7 @@ export const reducers = {
   orders: ordersReducer,
   reviews: reviewsReducer,
   wishlist: wishlistReducer,
+  site: siteReducer,
   adminDashboard: adminDashboardReducer,
   adminCategories: adminCategoriesReducer,
   adminProducts: adminProductsReducer,

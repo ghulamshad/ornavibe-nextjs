@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { fetchSiteContent } from '@/lib/api/site.service';
+import { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import { fetchSiteContentRequest } from '@/redux/slices/site.slice';
 import { resolveStoreLogoSrc } from '@/lib/utils/branding';
 
 export interface PublicSiteBranding {
@@ -11,35 +13,24 @@ export interface PublicSiteBranding {
 }
 
 /**
- * Loads public site content once (no auth) for admin shell branding when SiteContentProvider is not mounted.
+ * Admin shell branding: triggers the same site-content saga as the storefront and derives logo/name from Redux.
  */
-export function usePublicSiteBranding(): PublicSiteBranding | null {
-  const [data, setData] = useState<PublicSiteBranding | null>(null);
+export function usePublicSiteBranding(): PublicSiteBranding {
+  const dispatch = useDispatch<AppDispatch>();
+  const raw = useSelector((s: RootState) => s.site.content);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchSiteContent()
-      .then((c) => {
-        if (cancelled) return;
-        setData({
-          logoSrc: resolveStoreLogoSrc(c.store?.logo_url),
-          brandName: c.footer?.brand?.trim() || 'Store',
-          companyLine: [c.footer?.company, 'Admin'].filter(Boolean).join(' · ') || 'Admin',
-        });
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setData({
-            logoSrc: resolveStoreLogoSrc(null),
-            brandName: 'Store',
-            companyLine: 'Admin',
-          });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    dispatch(fetchSiteContentRequest());
+  }, [dispatch]);
 
-  return data;
+  return useMemo(
+    (): PublicSiteBranding => ({
+      logoSrc: resolveStoreLogoSrc(raw?.store?.logo_url ?? null),
+      brandName: raw?.footer?.brand?.trim() || 'Store',
+      companyLine:
+        [raw?.footer?.company, 'Admin'].filter(Boolean).join(' · ') ||
+        'Admin',
+    }),
+    [raw?.footer?.brand, raw?.footer?.company, raw?.store?.logo_url]
+  );
 }

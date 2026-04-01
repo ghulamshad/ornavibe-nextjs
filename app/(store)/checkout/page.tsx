@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -19,14 +19,16 @@ import {
   type SelectChangeEvent,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '@/redux/store';
 import Link from 'next/link';
-import { placeOrderRequest } from '@/redux/slices/checkout.slice';
+import type { RootState, AppDispatch } from '@/redux/store';
+import {
+  placeOrderRequest,
+  previewCheckoutRequest,
+  resetCheckoutPreview,
+} from '@/redux/slices/checkout.slice';
 import type { CreateOrderPayload, ShippingAddress } from '@/types/order';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { formatCurrency } from '@/lib/utils/currency';
-import { previewCheckout, type CheckoutPreview } from '@/lib/api/orders.service';
-import { extractErrorMessage } from '@/lib/utils/errorHandler';
 
 const initialAddress: ShippingAddress = {
   line1: '',
@@ -51,7 +53,9 @@ export default function CheckoutPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const { cart } = useSelector((state: RootState) => state.cart);
-  const { placing, error } = useSelector((state: RootState) => state.checkout);
+  const { placing, error, preview, previewLoading, previewError } = useSelector(
+    (state: RootState) => state.checkout
+  );
   const content = useSiteContent();
   const currencySymbol = content.store?.currency_symbol ?? 'Rs.';
 
@@ -69,10 +73,6 @@ export default function CheckoutPage() {
   const codEnabled = content.store?.payment_gateway_cod_enabled === true;
 
   const [paymentGateway, setPaymentGateway] = useState<PaymentGateway>('stripe');
-
-  const [preview, setPreview] = useState<CheckoutPreview | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const [shippingMethod, setShippingMethod] = useState('');
 
@@ -93,15 +93,13 @@ export default function CheckoutPage() {
     else if (codEnabled) setPaymentGateway('cod');
   }, [stripeEnabled, bankDepositEnabled, codEnabled, paymentGateway]);
 
-  const refreshPreview = useCallback(async () => {
+  useEffect(() => {
     if (!cart?.items?.length || !isAuthenticated) {
-      setPreview(null);
+      dispatch(resetCheckoutPreview());
       return;
     }
-    setPreviewLoading(true);
-    setPreviewError(null);
-    try {
-      const p = await previewCheckout({
+    dispatch(
+      previewCheckoutRequest({
         payment_gateway: paymentGateway,
         shipping_method: shippingMethod || undefined,
         shipping_address: {
@@ -112,15 +110,10 @@ export default function CheckoutPage() {
           postal_code: address.postal_code,
           country: address.country,
         },
-      });
-      setPreview(p);
-    } catch (err) {
-      setPreviewError(extractErrorMessage(err as object).message);
-      setPreview(null);
-    } finally {
-      setPreviewLoading(false);
-    }
+      })
+    );
   }, [
+    dispatch,
     cart?.items?.length,
     isAuthenticated,
     paymentGateway,
@@ -132,10 +125,6 @@ export default function CheckoutPage() {
     address.postal_code,
     address.country,
   ]);
-
-  useEffect(() => {
-    refreshPreview();
-  }, [refreshPreview]);
 
   const displayOptions: DisplayShippingOption[] = useMemo(() => {
     const quoted = preview?.shipping_quote?.methods;

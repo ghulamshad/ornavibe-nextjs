@@ -9,6 +9,7 @@ import { checkoutSaga } from './checkout.saga';
 import { ordersSaga } from './orders.saga';
 import { reviewsSaga } from './reviews.saga';
 import { wishlistSaga } from './wishlist.saga';
+import { siteSaga } from './site.saga';
 import { adminDashboardSaga } from './admin/adminDashboard.saga';
 import { adminCategoriesSaga } from './admin/adminCategories.saga';
 import { adminProductsSaga } from './admin/adminProducts.saga';
@@ -28,6 +29,7 @@ export default function* rootSaga() {
     fork(ordersSaga),
     fork(reviewsSaga),
     fork(wishlistSaga),
+    fork(siteSaga),
     fork(adminDashboardSaga),
     fork(adminCategoriesSaga),
     fork(adminProductsSaga),

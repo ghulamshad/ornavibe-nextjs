@@ -2,8 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "./storage";
- // localStorage
-// import { reducers } from "./slices";
+import { reducers } from "./slices";
 import rootSaga from "./sagas";
 import {
   FLUSH,
@@ -25,9 +24,6 @@ const authPersistConfig = {
   whitelist: ["user", "isAuthenticated"],
 };
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
-
-// Combine reducers
-import { reducers } from "./slices";
 
 const { auth, ...otherReducers } = reducers;
 const rootReducer = {

@@ -48,8 +48,13 @@ import {
   Twitter,
   Link as LinkIconMui,
 } from '@mui/icons-material';
-import { fetchHeaderNavCategories } from '@/lib/api/catalog.service';
-import { fetchProducts } from '@/lib/api/catalog.service';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import {
+  fetchHeaderNavRequest,
+  productSearchPreviewRequest,
+  clearProductSearchPreview,
+} from '@/redux/slices/catalog.slice';
 import { categoriesToNavItems, HEADER_NAV_FALLBACK, type NavItem } from '@/lib/headerNavFromCategories';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { resolveStoreLogoSrc } from '@/lib/utils/branding';
@@ -173,6 +178,10 @@ function MegaPanel({ item }: { item: NavItem }) {
 export default function Header() {
   const theme = useTheme();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { headerNavRoots, searchPreviewResults, searchPreviewLoading, searchPreviewQuery } = useSelector(
+    (state: RootState) => state.catalog
+  );
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { topbar, store, footer } = useSiteContent();
   const logoSrc = resolveStoreLogoSrc(store?.logo_url);
@@ -184,13 +193,22 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [nav, setNav] = useState<NavItem[]>(HEADER_NAV_FALLBACK);
+
+  const nav = useMemo(() => {
+    const built = categoriesToNavItems(headerNavRoots);
+    return built.length ? built : HEADER_NAV_FALLBACK;
+  }, [headerNavRoots]);
+
+  const qTrim = searchQuery.trim();
+  const previewAligned = qTrim.length >= 2 && searchPreviewQuery === qTrim;
+  const searchResults = previewAligned ? searchPreviewResults : [];
+  const searching = searchPreviewLoading && qTrim.length >= 2;
+  /** True while debouncing or waiting for Redux preview to match the current input. */
+  const searchPending = qTrim.length >= 2 && !previewAligned;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -199,18 +217,8 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    void fetchHeaderNavCategories()
-      .then((roots) => {
-        if (!cancelled && roots.length > 0) {
-          setNav(categoriesToNavItems(roots));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    dispatch(fetchHeaderNavRequest());
+  }, [dispatch]);
 
   const activeItem = useMemo(() => nav.find((n) => n.label === activeMenu), [nav, activeMenu]);
   const topCollections = useMemo(() => nav.map((n) => ({ label: n.label, href: n.href })), [nav]);
@@ -233,32 +241,20 @@ export default function Header() {
 
     const q = searchQuery.trim();
     if (q.length < 2) {
-      setSearching(false);
-      setSearchResults([]);
+      dispatch(clearProductSearchPreview());
       return;
     }
 
     let cancelled = false;
-    setSearching(true);
     const id = window.setTimeout(() => {
-      void fetchProducts({ search: q, per_page: 8, sort: 'newest' })
-        .then((data) => {
-          const list = Array.isArray(data) ? data : data.data ?? [];
-          if (!cancelled) setSearchResults(Array.isArray(list) ? list : []);
-        })
-        .catch(() => {
-          if (!cancelled) setSearchResults([]);
-        })
-        .finally(() => {
-          if (!cancelled) setSearching(false);
-        });
+      if (!cancelled) dispatch(productSearchPreviewRequest(searchQuery));
     }, 250);
 
     return () => {
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [searchOpen, searchQuery]);
+  }, [searchOpen, searchQuery, dispatch]);
 
   const pushRecentSearch = (query: string) => {
     setRecentSearches((prev) => {
@@ -277,16 +273,14 @@ export default function Header() {
     if (!query) return;
     pushRecentSearch(query);
     setSearchOpen(false);
-    setSearchResults([]);
-    setSearching(false);
+    dispatch(clearProductSearchPreview());
     router.push(`/products?search=${encodeURIComponent(query)}`);
   };
 
   const closeSearch = () => {
     setSearchOpen(false);
     setSearchQuery('');
-    setSearchResults([]);
-    setSearching(false);
+    dispatch(clearProductSearchPreview());
   };
 
   return (
@@ -414,9 +408,10 @@ export default function Header() {
               <Box component={Link} href="/" sx={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifySelf: isMobile ? 'center' : 'start' }}>
                 <Box
                   component="img"
-                  src={logoSrc}
+                  // src={logoSrc}
+                  src="/assets/header-logo.png"
                   alt={brandAlt}
-                  sx={{ width: { xs: 130, md: 165 }, height: { xs: 44, md: 52 }, objectFit: 'contain', display: 'block' }}
+                  sx={{ width: { xs: 130, md: 165 }, height: { xs: 44, md: 82 }, objectFit: 'contain', display: 'block' }}
                 />
               </Box>
 
@@ -584,7 +579,7 @@ export default function Header() {
           {searchQuery.trim().length >= 2 ? (
             <Box sx={{ mb: 2 }}>
               <Typography sx={{ mb: 1, fontWeight: 800 }}>
-                Results {searching ? '…' : ''}
+                Results {searching || searchPending ? '…' : ''}
               </Typography>
               {searchResults.length ? (
                 <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -645,7 +640,7 @@ export default function Header() {
                 </List>
               ) : (
                 <Typography color="text.secondary" variant="body2">
-                  {searching ? 'Searching…' : 'No products found.'}
+                  {searching || searchPending ? 'Searching…' : 'No products found.'}
                 </Typography>
               )}
 
@@ -654,7 +649,7 @@ export default function Header() {
                   variant="contained"
                   onClick={() => submitSearch(searchQuery)}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
-                  disabled={searching}
+                  disabled={searching || searchPending}
                 >
                   View all results
                 </Button>
