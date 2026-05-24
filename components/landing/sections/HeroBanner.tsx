@@ -52,6 +52,14 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 
+/** True only if the plain-text equivalent of `value` contains at least one letter or digit. */
+function hasMeaningfulText(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const text = stripHtml(value);
+  if (!text) return false;
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
 function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href);
 }
@@ -74,20 +82,31 @@ const HERO_HEIGHT_SVH = {
   xs: 'auto',
   md: 'calc(100svh - 118px)',
 } as const;
-const HERO_MIN_HEIGHT = {
-  xs: 320,
-  sm: 420,
-  md: 540,
-  lg: 600,
-  xl: 660,
+/**
+ * `min(pref, viewport-room)` — the hero can never exceed the visible viewport, even on landscape
+ * phones / short desktop windows where the header spacer would otherwise push content off-screen.
+ */
+const HERO_MIN_HEIGHT_FALLBACK = {
+  xs: 'min(320px, calc(100vh - 76px))',
+  sm: 'min(420px, calc(100vh - 76px))',
+  md: 'min(540px, calc(100vh - 118px))',
+  lg: 'min(600px, calc(100vh - 118px))',
+  xl: 'min(660px, calc(100vh - 118px))',
+} as const;
+const HERO_MIN_HEIGHT_SVH = {
+  xs: 'min(320px, calc(100svh - 76px))',
+  sm: 'min(420px, calc(100svh - 76px))',
+  md: 'min(540px, calc(100svh - 118px))',
+  lg: 'min(600px, calc(100svh - 118px))',
+  xl: 'min(660px, calc(100svh - 118px))',
 } as const;
 const HERO_MAX_HEIGHT_FALLBACK = {
   xs: 'calc(100vh - 76px)',
-  md: 'none',
+  md: 'calc(100vh - 118px)',
 } as const;
 const HERO_MAX_HEIGHT_SVH = {
   xs: 'calc(100svh - 76px)',
-  md: 'none',
+  md: 'calc(100svh - 118px)',
 } as const;
 
 const HERO_SIZES = '100vw';
@@ -163,11 +182,12 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
         // Desktop: nearly full viewport (`100vh` fallback + `100svh` upgrade).
         height: HERO_HEIGHT_FALLBACK,
         maxHeight: HERO_MAX_HEIGHT_FALLBACK,
+        minHeight: HERO_MIN_HEIGHT_FALLBACK,
         '@supports (height: 100svh)': {
           height: HERO_HEIGHT_SVH,
           maxHeight: HERO_MAX_HEIGHT_SVH,
+          minHeight: HERO_MIN_HEIGHT_SVH,
         },
-        minHeight: HERO_MIN_HEIGHT,
         // Stretch slick to the full hero height (fade mode positions slides absolutely, height must be set explicitly).
         '& .hero-banner-slick': { height: '100%' },
         '& .hero-banner-slick .slick-list': { height: '100%' },
@@ -198,11 +218,16 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
           const src = slide.image_url ? resolveMediaUrl(slide.image_url) : '';
           const hrefPrimary = slide.cta_primary_href?.trim() || '';
           const hrefSecondary = slide.cta_secondary_href?.trim() || '';
-          const titleHtml = slide.title?.trim() || '';
-          const subtitle = slide.sub_title?.trim() || '';
-          const description = slide.description?.trim() || '';
-          const ctaPrimary = slide.cta_primary_text?.trim() || '';
-          const ctaSecondary = slide.cta_secondary_text?.trim() || '';
+          // Strip empty / punctuation-only values so we never render `<h1>.</h1>` (or similar) from CMS placeholders.
+          const titleHtml = hasMeaningfulText(slide.title) ? slide.title!.trim() : '';
+          const subtitle = hasMeaningfulText(slide.sub_title) ? slide.sub_title!.trim() : '';
+          const description = hasMeaningfulText(slide.description) ? slide.description!.trim() : '';
+          const ctaPrimary = hasMeaningfulText(slide.cta_primary_text)
+            ? slide.cta_primary_text!.trim()
+            : '';
+          const ctaSecondary = hasMeaningfulText(slide.cta_secondary_text)
+            ? slide.cta_secondary_text!.trim()
+            : '';
           const alt =
             slide.image_alt?.trim() ||
             stripHtml(titleHtml) ||
@@ -212,8 +237,7 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
           const isLcp = index === 0;
           const unoptimized = heroImageUnoptimized(src);
 
-          const hasOverlay =
-            Boolean(titleHtml || subtitle || description || ctaPrimary || ctaSecondary);
+          const hasOverlay = Boolean(titleHtml || subtitle || description || ctaPrimary || ctaSecondary);
 
           const primaryButton =
             ctaPrimary && hrefPrimary ? (
